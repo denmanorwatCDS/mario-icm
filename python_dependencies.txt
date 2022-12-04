@@ -1,5 +1,5 @@
 torch==1.11.0
-numpy==1.22.3
+numpy==1.21.0
 gym==0.21.0
 gym-super-mario-bros==7.4.0
 wandb==0.13.5
@@ -10,3 +10,6 @@ pyglet==1.5.20
 nes-py==8.1.4
 torchvision==0.12.0
 stable-baselines3==1.6.2
+tensorboard==2.9.0
+daal==2021.4.0
+protobuf==3.20.0

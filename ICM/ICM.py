@@ -102,8 +102,8 @@ class ICM(nn.Module):
             unsqueeze(dim = 0).to(DEVICE)
         with torch.no_grad():
             predicted_state =\
-            self.forward_net(self.feature(observation), action)
+                self.forward_net(self.feature(observation), action)
             real_state = self.feature(next_observation)
-            intrinsic_reward = \
-            self.eta*((predicted_state-real_state)**2).sum().cpu().detach().numpy()
+            intrinsic_reward =\
+                self.eta*((predicted_state-real_state)**2).sum().cpu().detach().numpy()
         return intrinsic_reward

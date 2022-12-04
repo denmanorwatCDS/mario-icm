@@ -6,6 +6,7 @@ from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
 import torch
 from torch import nn
 from torch.nn import functional as F
+import wandb
 
 from Config.environment_config import ACTION_SPACE_SIZE, DEVICE
 from Config.ICM_config import BETA
@@ -58,6 +59,8 @@ class IntrinsicWrapper(gym.Wrapper):
         self.buffer = buffer
         self.motivation_only = motivation_only
         self.prev_obs = None
+        self.current_gradient_step = 1
+        self.logger = Logger()
     
 
     def __train_model(self):
@@ -67,11 +70,16 @@ class IntrinsicWrapper(gym.Wrapper):
             self.motivation_model.forward(observations, actions, next_observations)
             CE_loss = nn.CrossEntropyLoss()
             action_one_hot = F.one_hot(actions.flatten(), num_classes = ACTION_SPACE_SIZE)
-            icm_loss =(
-            BETA*(1/2*(next_states-predicted_states)**2).sum(dim = 1).mean() +
-            (1-BETA)*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
-            )
-            icm_loss_value = icm_loss.item()
+
+            state_prediction_loss =\
+                (1/2*(next_states-predicted_states)**2).sum(dim = 1).mean()
+            action_prediction_loss =\
+                CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
+            icm_loss =(BETA*state_prediction_loss + (1-BETA)*action_prediction_loss)
+
+            self.logger.log_losses(state_prediction_loss, action_prediction_loss, icm_loss,
+                                   self.current_gradient_step)
+            self.current_gradient_step += 1
             #print("ICM loss value: {}".format(icm_loss_value))
             self.optimizer_of_model.zero_grad()
             icm_loss.backward()
@@ -99,6 +107,7 @@ class IntrinsicWrapper(gym.Wrapper):
         if self.prev_obs is not None:
             self.__train_model()
         self.prev_obs = torch_obs if not done else None
+        self.logger.log_info(obs, info, reward, done, self.current_gradient_step)
         return obs, reward, done, info
 
 
@@ -127,3 +136,33 @@ class MaxAndSkipEnvWithObservation(MaxAndSkipEnv):
     def step(self, action):
         return_value = super().step(action)
         self.state = self.env.state
+
+class Logger():
+    def __init__(self):
+        self.buffer = []
+
+
+    def log_losses(self, state_prediction_loss, action_prediction_loss, icm_loss,
+                   current_gradient_step):
+        state_value, action_value, icm_value =\
+            state_prediction_loss.item(), action_prediction_loss.item(), icm_loss.item()
+        wandb.log({"State prediction loss": state_value,
+                       "Action prediction loss": action_value,
+                       "Total icm loss": icm_value,
+                       "Number of ICM gradient steps": current_gradient_step})
+
+
+    def log_info(self, obs, info, reward, done, current_gradient_step):
+        wandb.log({"X coordinate": info["x_pos"],
+                   "Number of ICM gradient steps": current_gradient_step})
+        wandb.log({"Reward gained": reward,
+                   "Number of ICM gradient steps": current_gradient_step})
+        self.__save_and_log_video(obs, done)
+
+
+    def __save_and_log_video(self, obs, done):
+        self.buffer.append(np.expand_dims(obs[:, :, 0], 0))
+        if done:
+            video_sequence = np.stack(self.buffer)
+            wandb.log({"Train video": wandb.Video(video_sequence, fps = 10, format = "gif")})
+            self.buffer = []
