@@ -1,0 +1,12 @@
+torch==1.11.0
+numpy==1.22.3
+gym==0.21.0
+gym-super-mario-bros==7.4.0
+wandb==0.13.5
+moviepy==0.2.3.5
+imageio==2.4.1
+imageio-ffmpeg==0.4.7
+pyglet==1.5.20
+nes-py==8.1.4
+torchvision==0.12.0
+stable-baselines3==1.6.2

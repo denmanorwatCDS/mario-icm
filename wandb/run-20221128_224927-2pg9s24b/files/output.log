@@ -1,0 +1,47 @@
+Using cuda device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+Wrapping the env in a VecTransposeImage.
+Previous observation shape: (42, 42, 3)
+Action: 9
+New observation shape: (42, 42, 3)
+Traceback (most recent call last):
+  File "/home/dvasilev/mario_icm/main.py", line 39, in <module>
+    model.learn(total_timesteps=10_000_000)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/a2c/a2c.py", line 203, in learn
+    return super().learn(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 262, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 181, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/base_vec_env.py", line 162, in step
+    return self.step_wait()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/vec_transpose.py", line 95, in step_wait
+    observations, rewards, dones, infos = self.venv.step_wait()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 43, in step_wait
+    obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = self.envs[env_idx].step(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/monitor.py", line 94, in step
+    observation, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/Environment_wrappers/wrappers.py", line 88, in step
+    intrinsic_reward = self.motivation_model(self.prev_obs, action, new_obs)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/dvasilev/mario_icm/ICM/ICM.py", line 83, in forward
+    state = self.feature(observation)
+  File "/home/dvasilev/mario_icm/ICM/ICM.py", line 62, in __call__
+    embeddings = self.simple_encoder(observation)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/torch/nn/modules/container.py", line 141, in forward
+    input = module(input)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 447, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 443, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+TypeError: conv2d() received an invalid combination of arguments - got (numpy.ndarray, Parameter, Parameter, tuple, tuple, tuple, int), but expected one of:
+ * (Tensor input, Tensor weight, Tensor bias, tuple of ints stride, tuple of ints padding, tuple of ints dilation, int groups)
+      didn't match because some of the arguments have invalid types: ([31mnumpy.ndarray[39m, [31mParameter[39m, [31mParameter[39m, [31mtuple[39m, [31mtuple[39m, [31mtuple[39m, [32mint[39m)
+ * (Tensor input, Tensor weight, Tensor bias, tuple of ints stride, str padding, tuple of ints dilation, int groups)
+      didn't match because some of the arguments have invalid types: ([31mnumpy.ndarray[39m, [31mParameter[39m, [31mParameter[39m, [31mtuple[39m, [31mtuple[39m, [31mtuple[39m, [32mint[39m)

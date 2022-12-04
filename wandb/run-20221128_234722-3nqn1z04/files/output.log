@@ -1,0 +1,387 @@
+Using cuda device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+Wrapping the env in a VecTransposeImage.
+Random indicies are: [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+ICM loss value: 3.441000461578369
+Random indicies are: [0 0 1 0 1 1 1 0 1 1 0 0 0 1 1 1 1 1 0 0 1 0 0 0 0 0 1 0 0 0 0 0]
+ICM loss value: 3.5515756607055664
+Random indicies are: [0 2 1 1 2 2 1 2 0 2 0 1 1 1 0 0 1 1 0 0 0 1 2 2 0 1 2 0 0 2 0 0]
+ICM loss value: 3.807248592376709
+Random indicies are: [3 1 1 2 0 3 2 2 3 1 0 3 3 3 1 0 0 0 2 1 3 1 3 2 0 1 1 3 2 0 3 0]
+ICM loss value: 4.031645774841309
+Random indicies are: [1 3 3 0 0 0 3 1 2 0 2 2 3 1 2 2 3 4 0 4 4 1 3 2 2 4 2 2 0 2 2 3]
+ICM loss value: 4.219870567321777
+Random indicies are: [4 0 0 1 4 3 2 0 2 5 1 2 1 5 2 2 4 2 0 0 1 1 0 3 1 5 3 4 3 0 2 3]
+ICM loss value: 4.156587600708008
+Random indicies are: [6 4 1 3 5 5 0 2 2 6 6 4 3 2 2 0 1 2 2 1 3 6 4 5 6 6 1 3 3 4 1 3]
+ICM loss value: 4.088712215423584
+Random indicies are: [1 2 3 5 1 2 1 2 0 4 0 5 5 0 6 5 0 3 7 6 2 1 2 4 7 7 4 5 0 6 2 1]
+ICM loss value: 3.9639363288879395
+Random indicies are: [1 4 3 0 2 4 0 4 2 3 3 4 8 0 8 6 0 2 2 7 6 0 2 3 5 4 5 2 1 4 8 5]
+ICM loss value: 3.8494436740875244
+Random indicies are: [7 3 8 9 8 7 4 6 1 1 8 8 8 2 3 4 3 4 4 4 9 2 5 9 8 7 2 6 8 5 7 4]
+ICM loss value: 3.744473934173584
+Random indicies are: [ 9 10  8  8  3  3  0  3  5  9  9 10  4 10  6 10  1  1 10  9  8  9  9  8
+  0  4  2  1  9  1  2  1]
+ICM loss value: 3.566533327102661
+Random indicies are: [10  8  6  2 10  5  5  9 10 11  3  8  5  2  8  2 11  9  5 10  6  1  8  9
+  8  4  5  6 10 10  0  0]
+ICM loss value: 3.394113540649414
+Random indicies are: [ 9  7  9 10  3  7 11 12  8  9  9  6  4  6  3 12  0 10  7  0  0  6 10  0
+ 11  2  7  1  4  8  9  8]
+ICM loss value: 3.0169472694396973
+Random indicies are: [ 6 12  1 13  0 10  4  7  1  5  6  1  5 13  5 12 11  6  7 12  8  0 11  1
+  3 11  2 12  9 11  3  4]
+ICM loss value: 2.72579288482666
+Random indicies are: [14 10  3  3  8  2 14 12 11 13  8  6  9  6 11  9  4  0  7 14 12  8 13  7
+  5 11 12  9 11  4  7  3]
+ICM loss value: 2.5703773498535156
+Random indicies are: [13  9  9 12 10 10 12  7  4  9  5  2 11  1  7 14  4 15  9  9  1  5  2  9
+ 11 15  1 12 15 11  5  0]
+ICM loss value: 2.450254440307617
+Random indicies are: [ 7 10 10  3  7 10 15 13 12  3  5  3  3  7  9  2  8  5  6 14  6 13  1 11
+  2  2  3  9 16 11 13 13]
+ICM loss value: 2.3432111740112305
+Random indicies are: [ 8  5  7 17  1 10 14 11 15 11 11 11 11 10  1  5 17 12  2  7 16  4  7  6
+ 17 14  6 12  8  9  5 13]
+ICM loss value: 2.4038076400756836
+Random indicies are: [13 11  3  5  3  4 12  9 14 10  5  9  9 10  0  2  7  6 10 10 10  5 10  2
+  3 10 14  9 15 17 11  6]
+ICM loss value: 2.439751625061035
+Random indicies are: [ 5  0  8 11 15  3 13  9  1 17 10 11  7  3 15 12 18  7  8 14 19  6  2 12
+ 15  5 10  3 19  6  4 10]
+ICM loss value: 2.3241825103759766
+Random indicies are: [18  7  5  8  2 18  1  9 13  6  9  6 17  9  6  3  3 10  6 15 10 12 20  7
+  6 10 16 14  7  6  6  2]
+ICM loss value: 2.268688678741455
+Random indicies are: [18 21  2 20 21  8  1  6  2  9  6  0  7  4  7  3  5 18 14 18  7 21 21 16
+ 19 10  3 16 19  2 16 16]
+ICM loss value: 2.1806464195251465
+Random indicies are: [13 14  6 22 22 21 15  0 10  6 14 17  5 20 15  1 14 18 12 21  8 14 18 11
+  9 18 11 21  5 20 19 17]
+ICM loss value: 2.1768581867218018
+Random indicies are: [23  0 12 10 15 18  4  7  9 11  1 17  5 21 14 11  2 21  8  8  8  5 16  9
+  4 20  1  1  1 16  4  5]
+ICM loss value: 2.0064733028411865
+Random indicies are: [19  0 15 19  4  1 24 21 18  2  8 18 14 24  7  1 14 12 12  1  9  1  2 21
+  9  3 23  6 10  4 22  4]
+ICM loss value: 1.9214295148849487
+Random indicies are: [ 4  4 16 10  8 20 13  4 24 22 15 20 18 21 12  8 19  8 12  9 21 19 17 19
+ 16  5 12 17 11 14 22 22]
+ICM loss value: 2.0293755531311035
+Random indicies are: [ 0 15 10  9  6  8  4 16  6  2 21  9 15  2 26  9 19 19  3  1 14 26  2  9
+  6 17 12 19  0 23 17  5]
+ICM loss value: 2.041532039642334
+Random indicies are: [19  6 21  7  7 27 25 15  8 14 21 13  7 24 15  7 26  1 21 10 22  7 17 16
+ 22 26 13 14 17 11  2 27]
+ICM loss value: 1.994970440864563
+Random indicies are: [ 4 18 16 26  2 23  5 19 28 13 17  2  3 11 24  0  3  1 25 21  3 23 15 24
+  2 19 26  8 12 28 16 28]
+ICM loss value: 2.0270192623138428
+Random indicies are: [29 19 24 24  4 22 29 18  2  6  2 19 12 15  7  3 12 28  8 24 10 20  1  7
+ 10 25 17 10  7 23 12 18]
+ICM loss value: 1.9867467880249023
+Random indicies are: [ 9 19 25 26 21 20  5  5 13  7 27 30 29  6  5 28 14 22 29 30  6 29 13 18
+ 15 24  9 29 15  9 25  7]
+ICM loss value: 2.1166610717773438
+Random indicies are: [26  8  4  6 23 12 24 14  9 27 19  1 30 10 30 20  4 24 21  6 25  4 19 29
+ 25 19 12 25 13 24 30 13]
+ICM loss value: 2.061347723007202
+Random indicies are: [21 30  3 24 18 18 24 10  2 32 28 27 15 11 11  1 18 19  8  3 23  5 23 15
+  9 25  8  6  9 24  7 20]
+ICM loss value: 2.0678117275238037
+Random indicies are: [31 12 24 25 15 13  1  0 15 31  2 24  6  7 16 21 29 26  3 18 30 11  1 28
+ 17 23 31 25 11 29 15 11]
+ICM loss value: 2.0666232109069824
+Random indicies are: [34  0  4 22 17 11 25 15 14 23 25 22 15 23  4 16  2 31 34  5 13 32 16 17
+ 30  8  3  8  2 17  9 20]
+ICM loss value: 2.019111394882202
+Random indicies are: [26 15 33  0  3  9 12 10 11 28 10 17 18 33 25  2 24 19 31 27 17  7 17 15
+  1 35 12 27  2 30  2 13]
+ICM loss value: 2.027355909347534
+Random indicies are: [29 23 32 28 26 29 21 16 15 10  2 29  1 23 21  1 31  8 17 27 11 25 36 21
+ 20  3  2  7 34 17 18 27]
+ICM loss value: 2.0500576496124268
+Random indicies are: [ 8 34 15 10 18 28  5 21  8 17 27 14  7  5 23 29 33 18  6 12  1 28 16  7
+ 28 10  4 17 22 13 10 31]
+ICM loss value: 2.0289251804351807
+Random indicies are: [ 4 13  4 16 34 37 18 21 27 30 30 32 37  3 32 24  3 27 14 38 17 37 25 32
+ 36 29 26 13 19 10  3 22]
+ICM loss value: 2.0300405025482178
+Random indicies are: [26 36 23  9 30 34  6 18  5 30 22 34 23  0 15  8 28 36  0 35 21 36 12 18
+ 39 26  9 12 25  1 20 34]
+ICM loss value: 2.078324317932129
+Random indicies are: [ 7  5 22 34 34 25 28 36 30  0 40  1 27 30 12 13  1 32 35 24 32 32 19 10
+ 28 20 26 30  2 16 30 37]
+ICM loss value: 2.042344570159912
+Random indicies are: [18 26 33 40 26  1  6 12 36  9 30  2  5 11  0 40 16 38 10 29 41 41 27  5
+ 19 12 23 22  1 24  4 40]
+ICM loss value: 2.0378386974334717
+Random indicies are: [22 13 17 29 25 42 17 33 23 28 31 24 28 16 38 30 20 10  3 41 29  0  6 40
+  8 33 10 37 42 14 15  1]
+ICM loss value: 2.1377499103546143
+Random indicies are: [21  5 39  0 32 37 20 40 26 14 39 42 17 42 20 11 17 39 41 38 32 33 14  9
+  7 17 31  4  7 26 36 39]
+ICM loss value: 2.17195463180542
+Random indicies are: [35  1 12 32 39  8 18 19 42 39  0 12 36 26 44 38  7 10 36 10 27 29  6 36
+ 22 17 40 17 18 10 22  6]
+ICM loss value: 2.125565528869629
+Random indicies are: [17 13 39 19 24 22 39 31 11 10 20 22 42 12 43 28 45 16 11 38 13 26 18 17
+ 24 10  0  8 44  6 21 18]
+ICM loss value: 2.1421940326690674
+Random indicies are: [ 2  7 25 26  2  4 27 24 13 41  1 39 29 37 22 42 35 43  9 36 14 39  8 40
+ 42 12 20 28 30 21 39 31]
+ICM loss value: 2.0872802734375
+Random indicies are: [15 28 24  3  8  7 36 45 20 24 43  2 44  0 23  3 21  4 19 12  1 29 39 44
+ 35 21  6 24 37 26  2 27]
+ICM loss value: 2.0929365158081055
+Random indicies are: [38 25  9 29 36  0 30 34  0  6 38 26  8 18 12 39 17  0 21 45 15 33  4 35
+  3 38 30 44 33 34 12 40]
+ICM loss value: 2.163527488708496
+Random indicies are: [31 17 39 48 18  2 27 40 17 41 45 48 14 12 24 30 12 26 19 21  2 33 46 39
+  6 25 33 12 24 27 35 35]
+ICM loss value: 2.1845510005950928
+Random indicies are: [38 32 31 42 10 33 50  4 21 17 49 17 16 13  5 34  4 26 12  7  9 20 30  1
+ 15 30  2  9 33 38 28 45]
+ICM loss value: 2.1538009643554688
+Random indicies are: [37 21 51  8 28 32 20 13  5 34 37 25 15 42 50 45 48 45 27 50  5 22 22  5
+ 30 18 41 11 44 42 35 37]
+ICM loss value: 2.1896445751190186
+Random indicies are: [30  8 15 34  9 39 35 39 46 20  2 50 19  1 44  9 31 44 22 30 32 47 11 37
+ 17 33 50 14 37  2 20 24]
+ICM loss value: 2.224411964416504
+Random indicies are: [40  0 20 30 15 14 24  4 30 40 32 49 49  2 42 44 15 12 43 10 40 52 34 30
+  8 51 50  3 20 38 47 38]
+ICM loss value: 2.2663583755493164
+Random indicies are: [26  9  4 10 50 31 54 41 50 33 54 41  5 11  1  4  2 24 17 31  4 23 32 10
+ 24 14 38 52  4  4  7  7]
+ICM loss value: 2.1964452266693115
+Random indicies are: [ 0 45 36 23 17 41 10 13 13 14  1 28  9 17 54 50 28 29 27 21  2 43  0 32
+  7 38 50 43 38 47 55  6]
+ICM loss value: 2.2012951374053955
+Random indicies are: [18 29 42 27 28 48 52 56 31 39  7  4 26 46 12 45  5 33 28 50 47 29 31 19
+ 55 54 41 27 24 27 56 48]
+ICM loss value: 2.206444501876831
+Random indicies are: [38 16 51 46 48 19 52 29 45 48 13 29 51 20  7 39 32 54 42 54 50  0 14 18
+ 31 34  4 38 42 46 47 10]
+ICM loss value: 2.199004650115967
+Random indicies are: [38 23 21 45 54 32 40 41 23 50  9 44 11 35 23 46 44 12 50 33  7 11 52 55
+ 58 39 57 12 24 18 16 40]
+ICM loss value: 2.2200188636779785
+Random indicies are: [ 8 33 53 21 11 55  1 48  6 27 42 13 43  6 34 33 14 51 33 39 39 52 41  3
+ 23 26  3 50 26 14 23  4]
+ICM loss value: 2.1521618366241455
+Random indicies are: [47  5 48 51  5  2 28 31 16 33 50 22 59 59 38 48 52 44 11 20 13  4 56 38
+ 39 59 40 17  7  5 21 37]
+ICM loss value: 2.13313889503479
+Random indicies are: [60 59 45 52 37 24 43  1 39 35 21  7 20 58 25 11 56 53 24  2 49 22 16 60
+ 58 32 29 13 34 15  8 41]
+ICM loss value: 2.1521236896514893
+Random indicies are: [46 58 11 53 22 31 17 53  5 55 49 21 32 47 23 11 13 52 38 13 11  0 28 39
+ 11 46 39 46 51 49 36  8]
+ICM loss value: 2.1882331371307373
+Random indicies are: [58 60 23 33 34 58  0 61 20 24 62 51  9 62 58 29 53 17 19 58 23 21 12 60
+ 41 40 18 10 50 52 42 15]
+ICM loss value: 2.2136707305908203
+Random indicies are: [62 64 17 37  0 46 38  2 31 29 18 45 50  6 38 12 55 62 38 21 19 14 40  7
+ 64 32 12 26 16 25 57 59]
+ICM loss value: 2.3614752292633057
+Random indicies are: [25 34 53 11 22 17 37 53 15 22 53 46  5 13 54 46 44  0 19 59  6 45 52 26
+ 46 29 37 37 25 58 55 52]
+ICM loss value: 2.743335485458374
+Random indicies are: [59  7 66 12  6 58 53 60 51 24 23 58 11 42 64 14 36 49 18 13 64 39  2 53
+ 37 50 24 48 28 16 43 47]
+ICM loss value: 2.656712532043457
+Random indicies are: [50 61 22 24  9 35 24 57 49 18 46 32 57 18 21  9  3 49 44 25 22  6 15 12
+ 20 11 13 16 55 19 26 23]
+ICM loss value: 3.105018377304077
+Random indicies are: [21 21 48 31 49 11 32 10 35 65 50 38 38  3 32 59 64 66 17 64 57 64 28 38
+ 67 29 19 43  8 14 20 65]
+ICM loss value: 3.092996120452881
+Random indicies are: [ 1 64  4 54 68 35 24 49  5 37 43 49 19 57  8 44 43  6 23  3  5 13 10 69
+ 44 46 15 58 54 34 44 66]
+ICM loss value: 3.1372852325439453
+Random indicies are: [23 69 69 17 19 39 29 26 31 23  4 62 36 63 34 69 69  5 48 19 18 49 26  5
+ 44 52 40  6 41 64  8 47]
+ICM loss value: 2.9866745471954346
+Random indicies are: [ 5 35 29 66 59 58 16 30 12 22 14 34 31 34 47 68 13 67 17 56 58 33  8 25
+ 13 33 34 46 59 69 44 26]
+ICM loss value: 2.9619717597961426
+Random indicies are: [42 18 42 27 23 53 63 51 32 72 56  7 62 50 37 72 60  6 50  7 14 58 25  3
+ 50 66  4 11 70 34 45 21]
+ICM loss value: 2.9289565086364746
+Random indicies are: [32 58 43 61  2 73 65 15 10 71 46 23 31 53 25 44 12 16 42 56 54 27 52 35
+ 56 62 55 68 16 61 56  6]
+ICM loss value: 2.8637354373931885
+Random indicies are: [47  3 40 30 43 51 36 49 22 42  3 34 18 41 15 19 52 30 45 51 27 19 23  1
+ 65 70 19 57 57  2  7 44]
+ICM loss value: 2.7568283081054688
+Random indicies are: [16 54 49 53 72  4 47 28 22 31 17 40 56  4 11 18 75 34 52 23 59 64 67 31
+ 63 71 58 68 29 20 30 56]
+ICM loss value: 2.571624279022217
+Random indicies are: [52 58 58 12  7  7  6  8 28 33 44 41  9  4 17 53 50 68 42 72 25 40 38  0
+ 53  1 58 68 10  3 73  2]
+ICM loss value: 2.4337387084960938
+Random indicies are: [55 54 32  8 65  3 55 24 69  0 15 47 42 62 25 35 47 20 42 34 57 15 63 49
+ 18 40 16 66  6 66 57 63]
+ICM loss value: 2.2846059799194336
+Random indicies are: [30 30 33 66 76 62 48 35 68  8 43 72 49  0 56 42 24 45 37 26 50 61 27 72
+ 32 71 73 35  9 40 46 57]
+ICM loss value: 2.0664024353027344
+Random indicies are: [49 51 18 51 73 55  4 43 60  5 19 16  4 21 42 72  3 59 24 39 29 42 68 22
+ 12 75 34 59  0 29 28 33]
+ICM loss value: 2.0999948978424072
+Random indicies are: [62  1 70  0 39 78 68 34 52 43 64 61 74 54 50 68 72 41  0 74 22 76 49  2
+ 43 48 30 33 70 69 70 10]
+ICM loss value: 1.8628764152526855
+Random indicies are: [26 26 70 48 57 76  1 36  4 51 36 74 53 51 74 78 20 64 65 65 16 35  2 49
+  5 57 76  3 59 30 22 64]
+ICM loss value: 1.7916309833526611
+Random indicies are: [ 9 26 13 66 80 60  4 17 70 77 27  2 76 60 59 17 39 78 42 31 24 68  5 38
+ 73  2 31 22 11 63 35 63]
+ICM loss value: 1.8298375606536865
+Random indicies are: [41 29 64 34 66 29 34  9 35  5 48 19 47 32 53 80 58  8 49 54 42 50 71 47
+ 45 78 18 60 63 18  1 18]
+ICM loss value: 1.7465993165969849
+Random indicies are: [ 9 58 50 71 75  8 14 70 84 78 51 21 61  3 14  5 29 76 58 65 73 79 17 39
+ 59 53 23 29 42 49  4 68]
+ICM loss value: 1.6648725271224976
+Random indicies are: [41 23 21 50 82 79 56 81 13 40 14 41  0 60 13 11 11 42  8  5  6 69 18  4
+ 43 72  0  3 62 33  0  0]
+ICM loss value: 1.8425419330596924
+Random indicies are: [12 71 74 80 54 73 62 41  4  6 12 67 77 69 82 83 50 31 20 78 83  7 77  4
+ 59 46 41 19 17 45 37 58]
+ICM loss value: 1.626502275466919
+Random indicies are: [16 20 23 71 52 81 39 87 55 21 14 45 24 61 13 44 68 60  6 71  6 14 64 35
+ 65 35 43 46 78 67 87 56]
+ICM loss value: 1.6452465057373047
+Random indicies are: [38 81 35 76 73 31  2 13 38 13 45 63 35 81 43 14 70  1 73 42 55 76 81 15
+ 50 51 11 88 27 69 55 52]
+ICM loss value: 1.5743417739868164
+Random indicies are: [38  4 66 66 17 83 38 53 22 29 12 27 29  8 75 50 22 27 55 51 69 81 39 71
+ 58  9 25 48 74 76 64 58]
+ICM loss value: 1.4624525308609009
+Random indicies are: [19 63 89 48  0 44 14 56  2 61 50 55 28 15 76 45 72 58  2 16 46 25 35 38
+ 57 68 55  2 82 70 30  9]
+ICM loss value: 1.5858935117721558
+Random indicies are: [39 45 68 87 76 17 85 49 60  4 61 85  3 77 58 72 77 83  6 81  0 16 88 79
+ 50 83 39  5 89 55 89 64]
+ICM loss value: 1.4939833879470825
+Random indicies are: [54 35 34 18  5 27  9 33 70  2  4 86  0 20 37 29  3 11  1 12 16 11  5 59
+ 77 51 74 68 57 55 49 51]
+ICM loss value: 1.629442811012268
+Random indicies are: [13 38 20 69 35 61 87 77 87 51 89 83 72 68 49 56 77  3 64 80 74 13 76 46
+  3 30 24 81 84 32 83  3]
+ICM loss value: 1.508277177810669
+Random indicies are: [78 11 33 29 73 76 16 42  8 84 51 41  7 38 80 16 39  9 92 27 20 65 62 48
+ 59 15 50 66 78 86 69 51]
+ICM loss value: 1.507606029510498
+Random indicies are: [66 70 35 70 49 10 26 72 76 66 47 54 88 27 48 11 21 30 94 21 55 88 95 45
+ 36 51 73 93  4 89 78 34]
+ICM loss value: 1.5537656545639038
+Random indicies are: [22  1 67 34 66 35  9 50  2 55 78 69 75 81 94  4 64 63 94 23 36 39 36 22
+ 80 74 31 25 38 33 40 74]
+ICM loss value: 1.4969439506530762
+Random indicies are: [86 36 73 74 31 38 30 97  4 38  4 85 51 78 84 82 77 23 43 71 42 76 18 59
+ 55 59 11  4 53  0 13  2]
+ICM loss value: 1.564568281173706
+Random indicies are: [ 7 28  0 17 73 84 92 49 23  3 40 52 71 39 17 16 36  0 38 31 18 51 56 94
+  2 42 93 36 12 92  6 82]
+ICM loss value: 1.6063289642333984
+Random indicies are: [77 52 24 13  7 17 61 60 74 49 65 48 86 38 32 16 35 34  9 97 63 26 10 46
+ 90 24 38 77 64 14  2 98]
+ICM loss value: 1.5496774911880493
+Random indicies are: [ 43  56  68  50  79  53  89  15  17  84  90  15  81  12  23  55   5  96
+  70  64  64  56 100  12  88   3  80  85  61  80  96  80]
+ICM loss value: 1.4190844297409058
+Random indicies are: [79 40 22 28  7 48 81 39 80 15 37  3 21 38 13 93 99  9 96 60  4 14 72 23
+ 52 32 44 76 66 24 82 39]
+ICM loss value: 1.5396931171417236
+Random indicies are: [52 45 96 25 52 96 22 64 51 87 44 99 54 22 89 88 75 47  3 10 28 43 40 77
+ 89  9 19 16 69 72 50 33]
+ICM loss value: 1.460645079612732
+Random indicies are: [ 14  80  90  39  28  99  89  34  84  66  87  34  41  99  42  97  51  28
+   9 101  89  41   9  94  31  94  57  33  10  22  35  59]
+ICM loss value: 1.4074283838272095
+Random indicies are: [  3   5 100  50  82  43  87  60  15  77  99  73  35  96  87   9  82  74
+ 100   3 102 103  40  63  35  98  51  94  59   9  55  82]
+ICM loss value: 1.3802754878997803
+Random indicies are: [15 19 13 54  9 28 99  4 11 84 62 21 88 79 79 91 50 87 86 98 23 87 30 89
+ 32 78 60 40 23  4 44 48]
+ICM loss value: 1.5293017625808716
+Random indicies are: [102  47 100  50  72  90  29  68 100  79  38  79  43  47  83  93  13   4
+  21  13  12   5  77  59  24  33 103 106 100  35  13   4]
+ICM loss value: 1.5287213325500488
+Random indicies are: [101  90  17  43  71  69  86  15  56  67  48  29  51  65  35  38  54  96
+ 106   4  42  42  17  74   6  59 102  10  72  70 103   4]
+ICM loss value: 1.4527395963668823
+Random indicies are: [  2  64  68  36  48 104  86  10  29 101  96  98  44  29  83  30  14  27
+  35  93  85   0   4  92  34  20  15  31  46  85  15  43]
+ICM loss value: 1.4519389867782593
+Random indicies are: [108   2  80  12  99  59  27  89 108  98  35   9  77 104  93  78  28   2
+  22  12  81  73  74   0  69  89 105  62   5  36 108  12]
+ICM loss value: 1.5764418840408325
+Random indicies are: [ 49  79  61  48  27  29  25  77  85  72  72  53  89   0  81  58  57  62
+   4  58  73  95  93 110  80  74  67 107  18   5  81  85]
+ICM loss value: 1.4509364366531372
+Random indicies are: [105 111  33  34   2 104  19  88  93  30  98  70  13   4  98  79  18  38
+  15  26 109  58   2 102  10  14  91  10   2   1  74  88]
+ICM loss value: 1.575716257095337
+Random indicies are: [ 99  67  63  11  16  33  90  16  74  93 101 101 102  32  93  87  68  99
+  91  29   3  18  53  32  87  90 106  67  46  30  40  11]
+ICM loss value: 1.5504673719406128
+Random indicies are: [  4  90  89   9  38 101  20   5  92  91 110  57  67  74  44  30 112 103
+  50  19  55  47   5  11 111  12  65  38  66  94  85   0]
+ICM loss value: 1.4499504566192627
+Random indicies are: [ 52   9  65   1  72  89  26  53   9  17  16  92  94  35  74 103  51  43
+   8 105  28 112   8  25   1  74  49  43  33  17 105  60]
+ICM loss value: 1.449426293373108
+Random indicies are: [102  22  80  47 100  15 111  25  54  64  57  80  64   5  44   6  40  38
+  89   1  76  79 114  44  37  25   3  85 104  87  73  38]
+ICM loss value: 1.373924970626831
+Random indicies are: [ 10  19  94  66  23  22 109  62  27  79  29  38  14  30  77  77   6  70
+  48  47  48  31  26  69 113  73   7  20  12  49  99  25]
+ICM loss value: 1.4985125064849854
+Random indicies are: [ 87  32  27  13  27  89  99  43 105 113   9  40  27  29  47  65   3  80
+  97  67  70  64 109  80  31  29  69  52  31   9   8  74]
+ICM loss value: 1.4733082056045532
+Random indicies are: [ 81  86  76 118  11  39  35  20  54  17  58 101  65 107  69  43  98   7
+ 100   4  93 102  47  73   5  34  22  58  73  73  83  81]
+ICM loss value: 1.3729389905929565
+Traceback (most recent call last):
+  File "/home/dvasilev/mario_icm/main.py", line 38, in <module>
+    model.learn(total_timesteps=10_000_000)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/a2c/a2c.py", line 203, in learn
+    return super().learn(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 262, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 181, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/base_vec_env.py", line 162, in step
+    return self.step_wait()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/vec_transpose.py", line 95, in step_wait
+    observations, rewards, dones, infos = self.venv.step_wait()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 43, in step_wait
+    obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = self.envs[env_idx].step(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/monitor.py", line 94, in step
+    observation, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/Environment_wrappers/wrappers.py", line 82, in step
+    obs, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/gym/core.py", line 323, in step
+    observation, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/atari_wrappers.py", line 139, in step
+    obs, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/nes_py/wrappers/joypad_space.py", line 74, in step
+    return self.env.step(self._action_map[action])
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/gym/wrappers/time_limit.py", line 18, in step
+    observation, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/nes_py/nes_env.py", line 299, in step
+    info = self._get_info()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/gym_super_mario_bros/smb_env.py", line 409, in _get_info
+    flag_get=self._flag_get,
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/gym_super_mario_bros/smb_env.py", line 256, in _flag_get
+    return self._is_world_over or self._is_stage_over
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/gym_super_mario_bros/smb_env.py", line 237, in _is_world_over
+    return self.ram[0x0770] == 2
+KeyboardInterrupt

@@ -1,0 +1,89 @@
+wandb_version: 1
+
+Action_space_size:
+  desc: null
+  value: 12
+BETA_ICM:
+  desc: null
+  value: 0.2
+Device:
+  desc: null
+  value: cuda:0
+ETA_ICM:
+  desc: null
+  value: 0.5
+Entropy_coefficient:
+  desc: null
+  value: 0.01
+GAE_lambda:
+  desc: null
+  value: 1.0
+Gamma:
+  desc: null
+  value: 0.99
+LR:
+  desc: null
+  value: 0.0001
+MODEL_NAME:
+  desc: null
+  value: A2C_free
+Max_episode_length:
+  desc: null
+  value: 10000000
+Maximum_grad_norm:
+  desc: null
+  value: 50
+No_shared:
+  desc: null
+  value: false
+Num_processes:
+  desc: null
+  value: 20
+Number_of_steps:
+  desc: null
+  value: 2
+STATE_SPACE_DIM_ICM:
+  desc: null
+  value: 64
+Seed:
+  desc: null
+  value: 1
+Value_loss_coeficient:
+  desc: null
+  value: 0.5
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.13.5
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    m:
+    - 1: Episode
+      6:
+      - 3
+    - 1: Train steps
+      6:
+      - 3
+    - 1: Test steps
+      6:
+      - 3
+    python_version: 3.9.15
+    start_time: 1669665964.38285
+    t:
+      1:
+      - 1
+      - 41
+      - 55
+      2:
+      - 1
+      - 41
+      - 55
+      3:
+      - 7
+      - 16
+      - 23
+      4: 3.9.15
+      5: 0.13.5
+      8:
+      - 5

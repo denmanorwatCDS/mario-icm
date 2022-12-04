@@ -1,0 +1,53 @@
+Using cuda device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+Wrapping the env in a VecTransposeImage.
+Previous observation shape: torch.Size([1, 3, 42, 42])
+Action shape: torch.Size([1])
+New observation shape: torch.Size([1, 3, 42, 42])
+Quantity of classes: 12
+Action shape before: torch.Size([1])
+State shape: torch.Size([1, 64])
+Action shape after: torch.Size([1, 12])
+ICM reward: (tensor([[0.0847, 0.0801, 0.0832, 0.0768, 0.0816, 0.0868, 0.0872, 0.0795, 0.0849,
+         0.0889, 0.0833, 0.0829]], device='cuda:0', grad_fn=<SoftmaxBackward0>), tensor([[-0.0738,  0.0987, -0.0986, -0.0772,  0.0286, -0.0236, -0.0478, -0.1074,
+          0.1667, -0.0567,  0.1060,  0.0158,  0.0315, -0.0522, -0.1142,  0.0179,
+         -0.0674, -0.0003,  0.0139, -0.0679, -0.0525, -0.0512,  0.0210, -0.0708,
+          0.0393,  0.0190,  0.0165,  0.0922, -0.0343, -0.1115,  0.0243,  0.0155,
+         -0.0252, -0.0466,  0.0475, -0.0201, -0.0243,  0.0680,  0.1075,  0.0798,
+         -0.0836,  0.0061,  0.0214,  0.0386, -0.0655,  0.0623,  0.0038, -0.1040,
+          0.0625, -0.0626,  0.0488, -0.0335, -0.0904, -0.0413,  0.0252,  0.0455,
+         -0.0012, -0.0814, -0.0569,  0.0073,  0.0491,  0.0407, -0.0964,  0.0721]],
+       device='cuda:0', grad_fn=<AddmmBackward0>), tensor([[-2.2217e-01, -1.7875e-01, -6.7408e-02,  1.2085e-02,  4.5679e-01,
+          9.7566e-01, -2.4223e-01,  5.9036e-02,  8.7455e-02, -2.3487e-03,
+         -3.6709e-01, -1.2414e-01, -4.5514e-02,  4.9124e-01, -2.1773e-01,
+         -3.2511e-01,  3.3571e-01, -1.9652e-01, -3.5943e-01,  1.6094e-01,
+          2.1385e-01, -4.9718e-02, -1.5877e-01,  6.9957e-01,  8.4758e-03,
+          3.6898e-01, -2.0667e-03,  1.3266e-03, -4.0396e-01,  1.8342e-01,
+         -4.5368e-02,  1.4112e-01,  4.1729e-02,  1.1474e-02, -6.5543e-02,
+          6.3440e-01,  4.4373e-03, -5.3804e-03, -3.5557e-02, -6.0660e-01,
+         -4.1052e-01,  2.1806e-01,  3.2060e-03, -5.3510e-01,  3.4555e-02,
+         -1.9746e-02, -5.6742e-01,  6.2999e-03,  1.3731e-05,  3.3422e-03,
+         -1.2559e-02, -2.2133e-02, -8.3883e-02,  1.2291e-02, -5.5982e-02,
+          6.2408e-02, -1.0774e-01,  1.0805e-02, -3.1258e-02,  1.0520e-01,
+          4.3488e-01, -2.3161e-01, -3.4013e-02,  2.0970e-01]], device='cuda:0'))
+Traceback (most recent call last):
+  File "/home/dvasilev/mario_icm/main.py", line 38, in <module>
+    model.learn(total_timesteps=10_000_000)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/a2c/a2c.py", line 203, in learn
+    return super().learn(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 262, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/on_policy_algorithm.py", line 181, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/base_vec_env.py", line 162, in step
+    return self.step_wait()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/vec_transpose.py", line 95, in step_wait
+    observations, rewards, dones, infos = self.venv.step_wait()
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/vec_env/dummy_vec_env.py", line 43, in step_wait
+    obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = self.envs[env_idx].step(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/stable_baselines3/common/monitor.py", line 94, in step
+    observation, reward, done, info = self.env.step(action)
+  File "/home/dvasilev/mario_icm/Environment_wrappers/wrappers.py", line 93, in step
+    print("Shape of ICM reward {}".format(intrinsic_reward.shape))
+AttributeError: 'tuple' object has no attribute 'shape'

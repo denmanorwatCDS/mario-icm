@@ -1,0 +1,179 @@
+2022-11-28 23:04:21,424 INFO    StreamThr :16577 [internal.py:wandb_internal():88] W&B internal server running at pid: 16577, started at: 2022-11-28 23:04:21.423315
+2022-11-28 23:04:21,425 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: status
+2022-11-28 23:04:21,426 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: status
+2022-11-28 23:04:21,427 INFO    WriterThread:16577 [datastore.py:open_for_write():75] open: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/run-2w1w5a9d.wandb
+2022-11-28 23:04:21,427 DEBUG   SenderThread:16577 [sender.py:send():303] send: header
+2022-11-28 23:04:21,434 DEBUG   SenderThread:16577 [sender.py:send():303] send: run
+2022-11-28 23:04:22,655 INFO    SenderThread:16577 [dir_watcher.py:__init__():216] watching files in: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files
+2022-11-28 23:04:22,655 INFO    SenderThread:16577 [sender.py:_start_run_threads():928] run started: 2w1w5a9d with start time 1669665861.4217
+2022-11-28 23:04:22,656 DEBUG   SenderThread:16577 [sender.py:send():303] send: summary
+2022-11-28 23:04:22,656 INFO    SenderThread:16577 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2022-11-28 23:04:22,657 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: check_version
+2022-11-28 23:04:22,657 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: check_version
+2022-11-28 23:04:22,802 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: run_start
+2022-11-28 23:04:22,808 DEBUG   HandlerThread:16577 [system_info.py:__init__():31] System info init
+2022-11-28 23:04:22,808 DEBUG   HandlerThread:16577 [system_info.py:__init__():46] System info init done
+2022-11-28 23:04:22,808 INFO    HandlerThread:16577 [system_monitor.py:start():150] Starting system monitor
+2022-11-28 23:04:22,809 INFO    SystemMonitor:16577 [system_monitor.py:_start():116] Starting system asset monitoring threads
+2022-11-28 23:04:22,809 INFO    HandlerThread:16577 [system_monitor.py:probe():168] Collecting system info
+2022-11-28 23:04:22,809 INFO    SystemMonitor:16577 [interfaces.py:start():168] Started cpu
+2022-11-28 23:04:22,810 INFO    SystemMonitor:16577 [interfaces.py:start():168] Started disk
+2022-11-28 23:04:22,820 INFO    SystemMonitor:16577 [interfaces.py:start():168] Started gpu
+2022-11-28 23:04:22,820 INFO    SystemMonitor:16577 [interfaces.py:start():168] Started memory
+2022-11-28 23:04:22,820 INFO    SystemMonitor:16577 [interfaces.py:start():168] Started network
+2022-11-28 23:04:22,830 DEBUG   HandlerThread:16577 [system_info.py:probe():195] Probing system
+2022-11-28 23:04:22,846 DEBUG   HandlerThread:16577 [system_info.py:_probe_git():180] Probing git
+2022-11-28 23:04:22,869 DEBUG   HandlerThread:16577 [system_info.py:_probe_git():188] Probing git done
+2022-11-28 23:04:22,869 DEBUG   HandlerThread:16577 [system_info.py:probe():241] Probing system done
+2022-11-28 23:04:22,869 DEBUG   HandlerThread:16577 [system_monitor.py:probe():177] {'os': 'Linux-5.15.0-53-generic-x86_64-with-glibc2.35', 'python': '3.9.15', 'heartbeatAt': '2022-11-28T20:04:22.830718', 'startedAt': '2022-11-28T20:04:21.416744', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/home/dvasilev/mario_icm/main.py', 'codePath': 'main.py', 'git': {'remote': None, 'commit': 'cd630a31213cd3591e09f8974d34241e811fab04'}, 'email': None, 'root': '/home/dvasilev/mario_icm', 'host': 'cds322', 'username': 'dvasilev', 'executable': '/home/dvasilev/mario_icm/.conda/bin/python', 'cpu_count': 6, 'cpu_count_logical': 6, 'cpu_freq': {'current': 3902.6504999999997, 'min': 800.0, 'max': 4100.0}, 'cpu_freq_per_core': [{'current': 3900.259, 'min': 800.0, 'max': 4100.0}, {'current': 3900.804, 'min': 800.0, 'max': 4100.0}, {'current': 3905.836, 'min': 800.0, 'max': 4100.0}, {'current': 3900.615, 'min': 800.0, 'max': 4100.0}, {'current': 3906.267, 'min': 800.0, 'max': 4100.0}, {'current': 3902.122, 'min': 800.0, 'max': 4100.0}], 'disk': {'total': 218.50913619995117, 'used': 24.782398223876953}, 'gpu': 'NVIDIA GeForce RTX 2060 SUPER', 'gpu_count': 1, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 2060 SUPER', 'memory_total': 8589934592}], 'memory': {'total': 15.507301330566406}}
+2022-11-28 23:04:22,869 INFO    HandlerThread:16577 [system_monitor.py:probe():178] Finished collecting system info
+2022-11-28 23:04:22,869 INFO    HandlerThread:16577 [system_monitor.py:probe():181] Publishing system info
+2022-11-28 23:04:22,869 DEBUG   HandlerThread:16577 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2022-11-28 23:04:22,870 DEBUG   HandlerThread:16577 [system_info.py:_save_pip():67] Saving pip packages done
+2022-11-28 23:04:22,870 DEBUG   HandlerThread:16577 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2022-11-28 23:04:22,873 ERROR   HandlerThread:16577 [system_info.py:_save_conda():85] Error saving conda packages: [Errno 2] No such file or directory: 'conda'
+Traceback (most recent call last):
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/wandb/sdk/internal/system/system_info.py", line 81, in _save_conda
+    subprocess.call(
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/subprocess.py", line 349, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/subprocess.py", line 951, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/subprocess.py", line 1821, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'conda'
+2022-11-28 23:04:22,874 DEBUG   HandlerThread:16577 [system_info.py:_save_conda():86] Saving conda packages done
+2022-11-28 23:04:22,874 INFO    HandlerThread:16577 [system_monitor.py:probe():183] Finished publishing system info
+2022-11-28 23:04:22,877 DEBUG   SenderThread:16577 [sender.py:send():303] send: files
+2022-11-28 23:04:22,877 INFO    SenderThread:16577 [sender.py:_save_file():1171] saving file wandb-metadata.json with policy now
+2022-11-28 23:04:22,882 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: stop_status
+2022-11-28 23:04:22,882 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: stop_status
+2022-11-28 23:04:23,093 DEBUG   SenderThread:16577 [sender.py:send():303] send: telemetry
+2022-11-28 23:04:23,093 DEBUG   SenderThread:16577 [sender.py:send():303] send: metric
+2022-11-28 23:04:23,093 DEBUG   SenderThread:16577 [sender.py:send():303] send: telemetry
+2022-11-28 23:04:23,093 DEBUG   SenderThread:16577 [sender.py:send():303] send: metric
+2022-11-28 23:04:23,093 DEBUG   SenderThread:16577 [sender.py:send():303] send: metric
+2022-11-28 23:04:23,494 INFO    Thread-16 :16577 [upload_job.py:push():143] Uploaded file /tmp/tmp_64pwf_awandb/237ozegx-wandb-metadata.json
+2022-11-28 23:04:23,656 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_created():275] file/dir created: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/wandb-metadata.json
+2022-11-28 23:04:23,656 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_created():275] file/dir created: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/conda-environment.yaml
+2022-11-28 23:04:23,656 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_created():275] file/dir created: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/wandb-summary.json
+2022-11-28 23:04:23,657 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_created():275] file/dir created: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/requirements.txt
+2022-11-28 23:04:25,444 DEBUG   SenderThread:16577 [sender.py:send():303] send: exit
+2022-11-28 23:04:25,444 INFO    SenderThread:16577 [sender.py:send_exit():442] handling exit code: 1
+2022-11-28 23:04:25,445 INFO    SenderThread:16577 [sender.py:send_exit():444] handling runtime: 2
+2022-11-28 23:04:25,446 INFO    SenderThread:16577 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2022-11-28 23:04:25,446 INFO    SenderThread:16577 [sender.py:send_exit():450] send defer
+2022-11-28 23:04:25,446 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,446 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 0
+2022-11-28 23:04:25,446 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,446 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 0
+2022-11-28 23:04:25,446 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 1
+2022-11-28 23:04:25,446 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,446 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 1
+2022-11-28 23:04:25,446 INFO    HandlerThread:16577 [system_monitor.py:finish():160] Stopping system monitor
+2022-11-28 23:04:25,447 DEBUG   SystemMonitor:16577 [system_monitor.py:_start():130] Starting system metrics aggregation loop
+2022-11-28 23:04:25,447 DEBUG   SystemMonitor:16577 [system_monitor.py:_start():137] Finished system metrics aggregation loop
+2022-11-28 23:04:25,447 DEBUG   SystemMonitor:16577 [system_monitor.py:_start():141] Publishing last batch of metrics
+2022-11-28 23:04:25,448 INFO    HandlerThread:16577 [interfaces.py:finish():173] Joined cpu
+2022-11-28 23:04:25,448 INFO    HandlerThread:16577 [interfaces.py:finish():173] Joined disk
+2022-11-28 23:04:25,473 INFO    HandlerThread:16577 [interfaces.py:finish():173] Joined gpu
+2022-11-28 23:04:25,473 INFO    HandlerThread:16577 [interfaces.py:finish():173] Joined memory
+2022-11-28 23:04:25,473 INFO    HandlerThread:16577 [interfaces.py:finish():173] Joined network
+2022-11-28 23:04:25,473 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,473 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 1
+2022-11-28 23:04:25,473 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 2
+2022-11-28 23:04:25,474 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,474 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 2
+2022-11-28 23:04:25,474 DEBUG   SenderThread:16577 [sender.py:send():303] send: stats
+2022-11-28 23:04:25,474 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,474 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 2
+2022-11-28 23:04:25,474 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 3
+2022-11-28 23:04:25,474 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,474 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 3
+2022-11-28 23:04:25,474 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,474 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 3
+2022-11-28 23:04:25,474 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 4
+2022-11-28 23:04:25,475 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,475 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 4
+2022-11-28 23:04:25,475 DEBUG   SenderThread:16577 [sender.py:send():303] send: summary
+2022-11-28 23:04:25,475 INFO    SenderThread:16577 [sender.py:_save_file():1171] saving file wandb-summary.json with policy end
+2022-11-28 23:04:25,475 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,475 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 4
+2022-11-28 23:04:25,475 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 5
+2022-11-28 23:04:25,475 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,475 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 5
+2022-11-28 23:04:25,476 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,476 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 5
+2022-11-28 23:04:25,660 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/wandb-summary.json
+2022-11-28 23:04:25,660 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_created():275] file/dir created: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/output.log
+2022-11-28 23:04:25,731 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 6
+2022-11-28 23:04:25,732 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:25,732 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 6
+2022-11-28 23:04:25,733 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:25,733 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 6
+2022-11-28 23:04:26,444 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: poll_exit
+2022-11-28 23:04:26,660 INFO    Thread-13 :16577 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/config.yaml
+2022-11-28 23:04:27,460 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 7
+2022-11-28 23:04:27,461 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: poll_exit
+2022-11-28 23:04:27,462 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:27,462 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 7
+2022-11-28 23:04:27,462 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:27,462 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 7
+2022-11-28 23:04:27,462 INFO    SenderThread:16577 [dir_watcher.py:finish():362] shutting down directory watcher
+2022-11-28 23:04:27,661 INFO    SenderThread:16577 [dir_watcher.py:_on_file_modified():292] file/dir modified: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/output.log
+2022-11-28 23:04:27,662 INFO    SenderThread:16577 [dir_watcher.py:finish():392] scan: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files
+2022-11-28 23:04:27,662 INFO    SenderThread:16577 [dir_watcher.py:finish():406] scan save: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/requirements.txt requirements.txt
+2022-11-28 23:04:27,663 INFO    SenderThread:16577 [dir_watcher.py:finish():406] scan save: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/wandb-metadata.json wandb-metadata.json
+2022-11-28 23:04:27,663 INFO    SenderThread:16577 [dir_watcher.py:finish():406] scan save: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/config.yaml config.yaml
+2022-11-28 23:04:27,670 INFO    SenderThread:16577 [dir_watcher.py:finish():406] scan save: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/conda-environment.yaml conda-environment.yaml
+2022-11-28 23:04:27,670 INFO    SenderThread:16577 [dir_watcher.py:finish():406] scan save: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/wandb-summary.json wandb-summary.json
+2022-11-28 23:04:27,671 INFO    SenderThread:16577 [dir_watcher.py:finish():406] scan save: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/output.log output.log
+2022-11-28 23:04:27,671 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 8
+2022-11-28 23:04:27,674 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:27,674 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 8
+2022-11-28 23:04:27,674 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:27,674 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 8
+2022-11-28 23:04:27,674 INFO    SenderThread:16577 [file_pusher.py:finish():168] shutting down file pusher
+2022-11-28 23:04:28,310 INFO    Thread-18 :16577 [upload_job.py:push():143] Uploaded file /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/config.yaml
+2022-11-28 23:04:28,330 INFO    Thread-19 :16577 [upload_job.py:push():143] Uploaded file /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/wandb-summary.json
+2022-11-28 23:04:28,336 INFO    Thread-20 :16577 [upload_job.py:push():143] Uploaded file /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/output.log
+2022-11-28 23:04:28,341 INFO    Thread-17 :16577 [upload_job.py:push():143] Uploaded file /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/files/requirements.txt
+2022-11-28 23:04:28,541 INFO    Thread-12 :16577 [sender.py:transition_state():463] send defer: 9
+2022-11-28 23:04:28,542 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:28,543 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 9
+2022-11-28 23:04:28,543 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:28,543 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 9
+2022-11-28 23:04:28,543 INFO    SenderThread:16577 [file_pusher.py:join():173] waiting for file pusher
+2022-11-28 23:04:28,544 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 10
+2022-11-28 23:04:28,544 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:28,544 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 10
+2022-11-28 23:04:28,545 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:28,545 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 10
+2022-11-28 23:04:28,720 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 11
+2022-11-28 23:04:28,721 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:28,721 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 11
+2022-11-28 23:04:28,721 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:28,721 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 11
+2022-11-28 23:04:28,722 INFO    SenderThread:16577 [sender.py:transition_state():463] send defer: 12
+2022-11-28 23:04:28,723 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: defer
+2022-11-28 23:04:28,723 INFO    HandlerThread:16577 [handler.py:handle_request_defer():162] handle defer: 12
+2022-11-28 23:04:28,724 DEBUG   SenderThread:16577 [sender.py:send():303] send: final
+2022-11-28 23:04:28,724 DEBUG   SenderThread:16577 [sender.py:send():303] send: footer
+2022-11-28 23:04:28,724 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: defer
+2022-11-28 23:04:28,724 INFO    SenderThread:16577 [sender.py:send_request_defer():459] handle sender defer: 12
+2022-11-28 23:04:28,726 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: poll_exit
+2022-11-28 23:04:28,727 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: poll_exit
+2022-11-28 23:04:28,729 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: server_info
+2022-11-28 23:04:28,730 DEBUG   SenderThread:16577 [sender.py:send_request():317] send_request: server_info
+2022-11-28 23:04:28,735 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: get_summary
+2022-11-28 23:04:28,735 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: sampled_history
+2022-11-28 23:04:29,179 INFO    MainThread:16577 [wandb_run.py:_footer_history_summary_info():3377] rendering history
+2022-11-28 23:04:29,179 INFO    MainThread:16577 [wandb_run.py:_footer_history_summary_info():3409] rendering summary
+2022-11-28 23:04:29,180 INFO    MainThread:16577 [wandb_run.py:_footer_sync_info():3333] logging synced files
+2022-11-28 23:04:29,181 DEBUG   HandlerThread:16577 [handler.py:handle_request():139] handle_request: shutdown
+2022-11-28 23:04:29,181 INFO    HandlerThread:16577 [handler.py:finish():814] shutting down handler
+2022-11-28 23:04:29,725 INFO    WriterThread:16577 [datastore.py:close():279] close: /home/dvasilev/mario_icm/wandb/run-20221128_230421-2w1w5a9d/run-2w1w5a9d.wandb
+2022-11-28 23:04:30,178 INFO    SenderThread:16577 [sender.py:finish():1331] shutting down sender
+2022-11-28 23:04:30,179 INFO    SenderThread:16577 [file_pusher.py:finish():168] shutting down file pusher
+2022-11-28 23:04:30,179 INFO    SenderThread:16577 [file_pusher.py:join():173] waiting for file pusher
+2022-11-28 23:04:30,186 INFO    MainThread:16577 [internal.py:handle_exit():78] Internal process exited
