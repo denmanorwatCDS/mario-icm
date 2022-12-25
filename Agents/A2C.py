@@ -5,8 +5,8 @@ from gym import spaces
 from torch import nn
 from torch.nn import functional as F
 from Agents.OnPolicyAlgorithm import OnPolicyAlgorithm
-from Config.environment_config import ACTION_SPACE_SIZE
-from Config.ICM_config import BETA
+from Config.ENV_CFG import ACTION_SPACE_SIZE
+from Config.ICM import BETA
 from Logger.helper_functions import calculate_grad_norm
 
 from stable_baselines3.common.policies import ActorCriticCnnPolicy, ActorCriticPolicy, BasePolicy, MultiInputActorCriticPolicy

@@ -15,8 +15,8 @@ from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedul
 from stable_baselines3.common.utils import obs_as_tensor, safe_mean
 from stable_baselines3.common.vec_env import VecEnv
 from ICM.ICM_buffer import ICMBuffer
-from Config.environment_config import BATCH_SIZE, RESIZED_SIZE, TEMPORAL_CHANNELS
-from Config.environment_config import DEVICE
+from Config.ENV_CFG import BATCH_SIZE, RESIZED_SIZE, TEMPORAL_CHANNELS
+from Config.ENV_CFG import DEVICE
 
 OnPolicyAlgorithmSelf = TypeVar("OnPolicyAlgorithmSelf", bound="OnPolicyAlgorithm")
 

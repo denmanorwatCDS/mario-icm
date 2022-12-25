@@ -11,7 +11,6 @@ class A2cLogger(Logger):
         self.logged_for_new_step = False
 
     def record(self, key, value, exclude = None):
-        super().record(key, value, exclude)
         if key == "train/n_updates":
             wandb.log({"Number_of_actor-critic_gradient_steps": value})
             self.current_gradient_step = value
