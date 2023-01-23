@@ -62,7 +62,7 @@ class ExtrinsicWrapper(gym.Wrapper):
 
 class IntrinsicWrapper(gym.Wrapper):
     def __init__(self, env, action_space_size, 
-    motivation_model=None, optimizer_of_model=None,  buffer=None, motivation_only=True, 
+    motivation_model = None, optimizer_of_model=None,  buffer=None, motivation_only=True,
     beta_coef = 0.5, fps = 10
     ):
         super().__init__(env)
@@ -76,6 +76,9 @@ class IntrinsicWrapper(gym.Wrapper):
         self.BETA = beta_coef
         self.ACTION_SPACE_SIZE = action_space_size
         self.logger = Logger(fps)
+        #print("Buffer id: {}".format(id(buffer)))
+        #print("Motivation model id: {}".format(id(motivation_model)))
+        #print("Optimizer id: {}".format(id(optimizer_of_model)))
     
 
     def __train_model(self):
@@ -93,8 +96,8 @@ class IntrinsicWrapper(gym.Wrapper):
             icm_loss = (self.BETA*state_prediction_loss + 
                         (1-self.BETA)*action_prediction_loss)
 
-            self.logger.log_losses(state_prediction_loss, action_prediction_loss, icm_loss,
-                                   self.current_gradient_step)
+            #self.logger.log_losses(state_prediction_loss, action_prediction_loss, icm_loss,
+            #                       self.current_gradient_step)
             self.current_gradient_step += 1
             #print("ICM loss value: {}".format(icm_loss_value))
             self.optimizer_of_model.zero_grad()
@@ -111,6 +114,7 @@ class IntrinsicWrapper(gym.Wrapper):
         intrinsic_reward = 0
         unclipped_intrinsic_reward = 0
         if self.prev_obs is not None:
+            print("Self buffer id: {}".format(id(self.buffer)))
             self.buffer.add_triplet(self.prev_obs, torch_action, torch_obs)
             unclipped_intrinsic_reward =\
                 self.motivation_model.intrinsic_reward(
@@ -124,8 +128,8 @@ class IntrinsicWrapper(gym.Wrapper):
         if self.prev_obs is not None:
             self.__train_model()
         self.prev_obs = torch_obs if not done else None
-        self.logger.log_info(obs, info, unclipped_intrinsic_reward, reward, 
-                             done, self.environment_steps)
+        #self.logger.log_info(obs, info, unclipped_intrinsic_reward, reward, 
+        #                     done, self.environment_steps)
         return obs, reward, done, info
 
 

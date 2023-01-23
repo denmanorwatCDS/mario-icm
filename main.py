@@ -1,5 +1,6 @@
 from torch import optim
 import gym_super_mario_bros
+import gym
 from nes_py.wrappers import JoypadSpace
 from Environment_wrappers.wrappers import ResizeAndGrayscale, IntrinsicWrapper
 
@@ -31,7 +32,7 @@ if ENV_CFG.SEED != -1:
 run = wandb.init(project = "Mario", config = HYPERPARAMS)
 
 
-env = gym_super_mario_bros.make('SuperMarioBros-v0')
+env = gym.make('SuperMarioBros-v0')
 env.seed(ENV_CFG.SEED) # New
 env = JoypadSpace(env, ENV_CFG.ALL_ACTION_SPACE)
 action_dim = env.action_space.n

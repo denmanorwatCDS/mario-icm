@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import pickle
 from torch import nn
+from threading import Lock
 from Config.ENV_CFG import DEVICE
 
 
@@ -12,15 +13,18 @@ class ICMBuffer():
         self.buffer_size = buffer_size
         self.save_as_train = True
         self.buffer = []
+        #self.lock = Lock()
 
     def add_triplet(self, observation, action, next_observation):
+        #print(observation.shape)
+
         if len(self.buffer) < self.buffer_size:
             self.buffer.append((observation, action, next_observation))
+        #else:
+        #    if self.save_as_train:
+        #        self.__save_as_train()
+        #        self.save_as_train=False
         else:
-            if self.save_as_train:
-                self.__save_as_train()
-                self.save_as_train=False
-
             swap_index = np.random.choice(self.buffer_size)
             self.buffer[swap_index] = (observation, action, next_observation)
 
@@ -38,8 +42,8 @@ class ICMBuffer():
         next_observations = torch.cat(next_observations, dim=0)
         return previous_observations, actions, next_observations
 
-    def __save_as_train(self):
-        path_to_file = "/home/dvasilev/mario_icm/debug/train_set/pickled_train_list.pkl"
-        with open(path_to_file, "wb") as train_loader_file:
-            pickle.dump(self.buffer, train_loader_file)
+    #def __save_as_train(self):
+    #    path_to_file = "/home/dvasilev/mario_icm/debug/train_set/pickled_train_list.pkl"
+    #    with open(path_to_file, "wb") as train_loader_file:
+    #        pickle.dump(self.buffer, train_loader_file)
 

@@ -1,6 +1,5 @@
-from moviepy.editor import ImageSequenceClip
-import wandb
 import numpy as np
+import wandb
 
 class WandBLogger():
     def __init__(self, HYPERPARAMS, MODEL_NAME, ACTION_SPACE, ACTION_NAMES, period = 10):
