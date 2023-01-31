@@ -6,7 +6,6 @@ from torch import nn
 from torch.nn import functional as F
 from PIL import Image
 import wandb
-import time
 
 from Config.ENV_CFG import DEVICE
 
@@ -48,7 +47,6 @@ class ResizeAndGrayscale(gym.ObservationWrapper):
         self.observation_buffer = []
         self.is_empty = True
 
-
 class ExtrinsicWrapper(gym.Wrapper):
     def __init__(self, env, fps = 10):
         super().__init__(env)
@@ -62,14 +60,15 @@ class ExtrinsicWrapper(gym.Wrapper):
                              done, self.environment_steps)
         return obs, reward, done, info
 
-
 class IntrinsicWrapper(gym.Wrapper):
-
-    def __init__(self, env, action_space_size, connection_to_model,
-    motivation_only=True, beta_coef = 0.5, fps = 10
+    def __init__(self, env, action_space_size, 
+    motivation_model = None, optimizer_of_model=None,  buffer=None, motivation_only=True,
+    beta_coef = 0.5, fps = 10
     ):
         super().__init__(env)
-        self.connection_to_model = connection_to_model
+        self.motivation_model = motivation_model
+        self.optimizer_of_model = optimizer_of_model
+        self.buffer = buffer
         self.motivation_only = motivation_only
         self.prev_obs = None
         self.current_gradient_step = 1
@@ -82,14 +81,13 @@ class IntrinsicWrapper(gym.Wrapper):
         #print("Optimizer id: {}".format(id(optimizer_of_model)))
     
 
-    """ def __train_model(self, observation, action, next_action):
+    def __train_model(self):
         if self.motivation_model is not None:
-            start = time.time()
+            observations, actions, next_observations = self.buffer.get_triplets()
             predicted_actions, predicted_states, next_states =\
-            self.motivation_model.forward(observation, action, next_action)
-            br1 = time.time()
+            self.motivation_model.forward(observations, actions, next_observations)
             CE_loss = nn.CrossEntropyLoss()
-            action_one_hot = F.one_hot(action.flatten(), num_classes = self.ACTION_SPACE_SIZE)
+            action_one_hot = F.one_hot(actions.flatten(), num_classes = self.ACTION_SPACE_SIZE)
 
             state_prediction_loss =\
                 (1/2*(next_states-predicted_states)**2).sum(dim = 1).mean()
@@ -97,64 +95,51 @@ class IntrinsicWrapper(gym.Wrapper):
                 CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
             icm_loss = (self.BETA*state_prediction_loss + 
                         (1-self.BETA)*action_prediction_loss)
+
             #self.logger.log_losses(state_prediction_loss, action_prediction_loss, icm_loss,
             #                       self.current_gradient_step)
             self.current_gradient_step += 1
             #print("ICM loss value: {}".format(icm_loss_value))
             self.optimizer_of_model.zero_grad()
-            br2 = time.time()
             icm_loss.backward()
-            br3 = time.time()
             self.optimizer_of_model.step()
-            end = time.time()
-            #print("Br1: {}".format(br1-start))
-            #print("Br2: {}".format(br2-br1))
-            #print("Br3: {}".format(br3-br2))
-            #print("End: {}".format(end-br3)) """
 
 
     def step(self, action):
-        start = time.time()
-        print("Connection to model: {}".format(self.connection_to_model))
         self.environment_steps += 1
         obs, reward, done, info = self.env.step(action)
         #_save_numpy_pic(obs)
-        torch_obs = self.torchify_observation(obs)
+        torch_obs = torchify_observation(obs)
         torch_action = torch.tensor([action]).to(DEVICE)
         intrinsic_reward = 0
         unclipped_intrinsic_reward = 0
-        #print(obs.shape)
-        #print(torch_obs.shape)
         if self.prev_obs is not None:
-            print("Message sent!")
-            self.connection_to_model.send((self.prev_obs, torch_action, torch_obs))
-            print("Observation sent!")
-            unclipped_intrinsic_reward = self.connection_to_model.recv()
+            print("Self buffer id: {}".format(id(self.buffer)))
+            self.buffer.add_triplet(self.prev_obs, torch_action, torch_obs)
+            unclipped_intrinsic_reward =\
+                self.motivation_model.intrinsic_reward(
+                    self.prev_obs, torch_action, torch_obs
+                )
             intrinsic_reward = np.clip(unclipped_intrinsic_reward, -1, 1)
         if self.motivation_only:
             reward = intrinsic_reward
         else:
             reward += intrinsic_reward
         if self.prev_obs is not None:
-            self.__train_model(self.prev_obs, torch_action, torch_obs)
+            self.__train_model()
         self.prev_obs = torch_obs if not done else None
-        #print(3)
         #self.logger.log_info(obs, info, unclipped_intrinsic_reward, reward, 
         #                     done, self.environment_steps)
-        end = time.time()
-        print("Step!")
-        #print("Total time of step function {}".format(end-start))
         return obs, reward, done, info
 
-    def torchify_observation(self, observation):
-        torch.cuda.empty_cache()
-        observation = observation.transpose(2, 0, 1).astype(np.float32)/255.0
-        print("Right way: {}".format(torch.cuda.mem_get_info()))
-        observation = torch.tensor(observation).to(DEVICE)
-        #_save_torch_pic(observation)
-        # observation = observation.float()/255.0
-        observation = torch.unsqueeze(observation, dim=0)
-        return observation
+
+def torchify_observation(observation):
+    observation = observation.transpose(2, 0, 1)
+    observation = torch.tensor(observation).to(DEVICE)
+    #_save_torch_pic(observation)
+    observation = observation.float()/255.0
+    observation = torch.unsqueeze(observation, dim=0)
+    return observation
 
 
 class Logger():

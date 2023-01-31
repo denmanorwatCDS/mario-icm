@@ -12,6 +12,7 @@ class CustomCallback(BaseCallback):
     def __init__(self, action_space_size, parallel_envs, quantity_of_logged_agents=4,
                  verbose=0, detailed = True):
         super(CustomCallback, self).__init__(verbose)
+        run = wandb.init(project = "Cartpole")
         wandb.define_metric("Agent steps")
         self.episodic_rewards = [0]*min(parallel_envs, quantity_of_logged_agents)
         self.agent_steps = 0
@@ -65,6 +66,7 @@ class CustomCallback(BaseCallback):
         #print("Global keys: {}".format(self.globals.keys()))
         #print(self.locals["obs_tensor"].shape)
         #print("Rewards: {}".format(self.locals["rewards"]))
+
         agents_rewards = self.locals["rewards"][:self.quantity_of_logged_agents]
         agents_dones = self.locals["dones"][:self.quantity_of_logged_agents]
         agents_obs = self.locals["obs_tensor"][:self.quantity_of_logged_agents]

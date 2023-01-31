@@ -18,7 +18,7 @@ ACTION_SPACE_SIZE = len(ALL_ACTION_SPACE)
 #Resized image size
 RESIZED_SIZE = (42, 42)
 
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cpu")#torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Temporal channels quantity
 TEMPORAL_CHANNELS = 4 #4

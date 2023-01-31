@@ -2,7 +2,7 @@ import torch.nn.functional as F
 import torch
 from torch import nn
 from Config.ENV_CFG import DEVICE
-from threading import Lock
+
 
 class Predictor(nn.Module):
     def __init__(self, action_dim, state_dim, hidden_layer_neurons):
@@ -63,13 +63,9 @@ class SimplefeatureNet(nn.Module):
 
 
 class ICM(nn.Module):
-    forward_lock = Lock()
-    intrinsic_lock = Lock()
-    var = 0
     def __init__(self, action_dim, temporal_channels,
                 hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32):
         super().__init__()
-        print("*** \nICM created \n***")
         self.eta = eta
         self.feature = SimplefeatureNet(temporal_channels, feature_map_qty).train()
 
@@ -78,44 +74,33 @@ class ICM(nn.Module):
         self.inverse_net = SimpleinverseNet(self.state_dim, action_dim, 
                            hidden_layer_neurons).train()
         self.forward_net = Predictor(action_dim, self.state_dim, hidden_layer_neurons).train()
-        self.var = 0
 
 
     def forward(self, observation, action, next_observation):
-        with ICM.forward_lock:
-            ICM.var += 1
-            self.var += 1
-            print("In")
-            print(id(ICM.forward_lock))
-            print(id(ICM.intrinsic_lock))
-            # It is neccesary to NOT learn encoder when predicting future states
-            # Encoder only learns when it guesses action by pair s_t & s_{t+1}
-            # print("Obervation shape: {}".format(observation.shape))
-            state = self.feature(observation)
-            # print("Latent state shape: {}".format(state.shape))
-            next_state = self.feature(next_observation)
-            action_logits = self.inverse_net(state, next_state)
-            # TODO: change to detach, maybe torch.no_grad() isn't needed
-            # with torch.no_grad():
-            const_state = self.feature(observation)
-            const_next_state = self.feature(next_observation)
-            predicted_state = self.forward_net(const_state, action)
-            print("Out")
-            return action_logits, predicted_state, const_next_state
+        # It is neccesary to NOT learn encoder when predicting future states
+        # Encoder only learns when it guesses action by pair s_t & s_{t+1}
+        # print("Obervation shape: {}".format(observation.shape))
+        state = self.feature(observation)
+        # print("Latent state shape: {}".format(state.shape))
+        next_state = self.feature(next_observation)
+        action_logits = self.inverse_net(state, next_state)
+        # TODO: change to detach, maybe torch.no_grad() isn't needed
+        # with torch.no_grad():
+        const_state = self.feature(observation)
+        const_next_state = self.feature(next_observation)
+        predicted_state = self.forward_net(const_state, action)
+        return action_logits, predicted_state, const_next_state
 
 
     def intrinsic_reward(self, observation, action, next_observation):
-        with ICM.intrinsic_lock:
-            intrinsic_reward = 0
-            if type(action) == int:
-                action = torch.nn.functional.one_hot(torch.tensor(action), self.action_dim).\
-                unsqueeze(dim = 0).to(DEVICE)
-            with torch.no_grad():
-                predicted_state =\
-                    self.forward_net(self.feature(observation), action)
-                real_state = self.feature(next_observation)
-                intrinsic_reward =\
-                    self.eta*((predicted_state-real_state)**2).sum().cpu().detach().numpy()
-            return intrinsic_reward
-
-    
+        intrinsic_reward = 0
+        if type(action) == int:
+            action = torch.nn.functional.one_hot(torch.tensor(action), self.action_dim).\
+            unsqueeze(dim = 0).to(DEVICE)
+        with torch.no_grad():
+            predicted_state =\
+                self.forward_net(self.feature(observation), action)
+            real_state = self.feature(next_observation)
+            intrinsic_reward =\
+                self.eta*((predicted_state-real_state)**2).sum().cpu().detach().numpy()
+        return intrinsic_reward

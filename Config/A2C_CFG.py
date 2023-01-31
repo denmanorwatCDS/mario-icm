@@ -27,6 +27,3 @@ POLICY_NEURONS = 256
 
 # Value hidden layer
 VALUE_NEURONS = 256
-
-# Quantity of processes
-NUM_PROCESSES = 2
