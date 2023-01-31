@@ -20,6 +20,7 @@ class A2CLogger(Logger):
             self.current_policy_loss = None
             self.logged_for_new_step = False
         if key == "train/entropy_loss":
+            # main_metrics/...
             wandb.log({"Current entropy loss": value,
                 "Number_of_actor-critic_gradient_steps": self.current_gradient_step})
         if key == "train/policy_loss":
