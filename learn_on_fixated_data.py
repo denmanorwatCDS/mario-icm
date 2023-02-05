@@ -5,8 +5,6 @@ from Config.all_hyperparams_dict import HYPERPARAMS
 from ICM.ICM import ICM
 from torch import optim, nn
 from torch.functional import F
-from PIL import Image
-import torch
 import wandb
 
 model = ICM(ENV_CFG.ACTION_SPACE_SIZE, temporal_channels = ENV_CFG.TEMPORAL_CHANNELS, 

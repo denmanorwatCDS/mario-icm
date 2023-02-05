@@ -58,10 +58,10 @@ class CustomEvalCallback(EvalCallback):
         """
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
             print("I've been called")
-        #print("Local keys: {}".format(self.locals.keys()))
-        #print("Global keys: {}".format(self.globals.keys()))
-        #print("Rewards: {}".format(self.locals["rewards"]))
-        #print(self.locals["callback"])
+            #print("Local keys: {}".format(self.locals.keys()))
+            #print("Global keys: {}".format(self.globals.keys()))
+            #print("Rewards: {}".format(self.locals["rewards"]))
+            #print(self.locals["callback"])
             mean_reward, _, sampled_observations = evaluate_policy(self.model, self.eval_env, 
                                                                    n_eval_episodes=5, deterministic=True)
             video_array = np.concatenate(sampled_observations, axis = 0)

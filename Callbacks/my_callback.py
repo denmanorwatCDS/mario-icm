@@ -66,6 +66,9 @@ class CustomCallback(BaseCallback):
         #print(self.locals["obs_tensor"].shape)
         #print("Rewards: {}".format(self.locals["rewards"]))
 
+        print(self.locals.keys())
+        print(self.locals["callback"])
+        print(self.locals["rewards"])
         agents_rewards = self.locals["rewards"][:self.quantity_of_logged_agents]
         agents_dones = self.locals["dones"][:self.quantity_of_logged_agents]
         agents_obs = self.locals["obs_tensor"][:self.quantity_of_logged_agents]

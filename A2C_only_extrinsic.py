@@ -1,12 +1,12 @@
 import gym_super_mario_bros
 from nes_py.wrappers import JoypadSpace
-from Environment_wrappers.wrappers import ResizeAndGrayscale, ExtrinsicWrapper
+from Environment_wrappers.wrappers import ResizeAndGrayscale
 
 from Agents.neural_network import ActorCritic
-from Logger.custom_sb3_loggers import A2cLogger
+from Logger.my_logger import A2CLogger
 
-from stable_baselines3.a2c.a2c import A2C
-from stable_baselines3.ppo.ppo import PPO
+#from stable_baselines3.a2c.a2c import A2C
+#from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.dqn.dqn import DQN
 from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
 
