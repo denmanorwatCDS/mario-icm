@@ -8,8 +8,8 @@ class CustomCallback(BaseCallback):
     :param verbose: Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages
     """
 
-    def __init__(self, action_space_size, parallel_envs, HYPERPARAMS, quantity_of_logged_agents=4,
-                 verbose=0, detailed = True):
+    def __init__(self, action_space_size, parallel_envs, HYPERPARAMS, quantity_of_logged_agents=3,
+                 verbose=0, detailed = True, framedrop=6):
         super(CustomCallback, self).__init__(verbose)
         run = wandb.init(project = "Cartpole", config=HYPERPARAMS)
         wandb.define_metric("Agent steps")
@@ -20,6 +20,7 @@ class CustomCallback(BaseCallback):
         self.quantity_of_logged_agents = quantity_of_logged_agents
         self.detailed = detailed
         self.videos_buffer = [[] for i in range(min(parallel_envs, quantity_of_logged_agents))]
+        self.framedrop=framedrop
         # Those variables will be accessible in the callback
         # (they are defined in the base class)
         # The RL model
@@ -131,13 +132,14 @@ class CustomCallback(BaseCallback):
 
 
     def log_current_observation(self, obs, dones):
-        #print("Obs shape: {}".format(obs.shape))
-        for i, observation, done in zip(range(obs.shape[-1]), torch.permute(obs, (3, 0, 1, 2)), dones):
+        observations = torch.permute(obs, (0, 3, 1, 2))
+        for i in range(obs.shape[0]):
+            observation, done = observations[i], dones[i]
             self.videos_buffer[i].append(observation[-1:])
             if done:
-                video_array = torch.stack(self.videos_buffer[i]).cpu()
+                video_array = torch.stack(self.videos_buffer[i][::self.framedrop]).cpu()
                 print(video_array.shape)
                 video_array = np.array(video_array)
                 self.videos_buffer[i] = []
-                wandb.log({"Agent №{}".format(i): wandb.Video(video_array, fps=30, format="gif"),
+                wandb.log({"Agent №{}".format(i): wandb.Video(video_array, fps=30/self.framedrop, format="gif"),
                            "Agent steps": self.n_calls})

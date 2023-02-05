@@ -65,7 +65,7 @@ if __name__=="__main__":
     callback = CustomCallback(parallel_envs=parallel_envs, action_space_size=env.action_space.n, 
                               HYPERPARAMS=HYPERPARAMS)
     eval_callback =\
-        CustomEvalCallback(eval_env=eval_env, eval_freq=50000, parallel_envs=1, 
+        CustomEvalCallback(eval_env=eval_env, eval_freq=10000, parallel_envs=1, 
                            action_space_size=eval_env.action_space.n)
 
     # A2C parameters

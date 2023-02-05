@@ -184,7 +184,7 @@ class A2C(OnPolicyAlgorithm):
             loss.backward()
             
             if self.reward_type in ["All", "Intrinsic"]:
-                self.train_motivation()
+                state_prediction_loss, action_prediction_loss, icm_loss = self.train_motivation()
 
             # Clip grad norm
             th.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
@@ -198,6 +198,10 @@ class A2C(OnPolicyAlgorithm):
         self.logger.record("train/entropy_loss", entropy_loss.item())
         self.logger.record("train/policy_loss", policy_loss.item())
         self.logger.record("train/value_loss", value_loss.item())
+        if self.reward_type in ["All", "Intrinsic"]:
+            self.logger.record("train/state_prediction_loss", state_prediction_loss)
+            self.logger.record("train/action_prediction_loss", action_prediction_loss)
+            self.logger.record("train/icm_loss", icm_loss)
         if hasattr(self.policy, "log_std"):
             self.logger.record("train/std", th.exp(self.policy.log_std).mean().item())
 
@@ -244,10 +248,6 @@ class A2C(OnPolicyAlgorithm):
         icm_loss = (self.beta*state_prediction_loss + 
                         (1-self.beta)*action_prediction_loss)
 
-        self.logger.record("train/state_prediction_loss", state_prediction_loss.item())
-        self.logger.record("train/action_prediction_loss", action_prediction_loss.item())
-        self.logger.record("train/icm_loss", icm_loss.item())
-
         #self.logger.log_losses(state_prediction_loss, action_prediction_loss, icm_loss,
         #                       self.current_gradient_step)
 
@@ -255,3 +255,5 @@ class A2C(OnPolicyAlgorithm):
         self.motivation_optim.zero_grad()
         icm_loss.backward()
         self.motivation_optim.step()
+
+        return state_prediction_loss.item(), action_prediction_loss.item(), icm_loss.item()

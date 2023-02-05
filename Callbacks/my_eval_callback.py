@@ -11,7 +11,7 @@ class CustomEvalCallback(EvalCallback):
 
     def __init__(self, eval_env, eval_freq,  
                  action_space_size, parallel_envs, verbose=0, detailed = True, 
-                 deterministic=True, render=False, 
+                 deterministic=True, render=False, framedrop = 6,
                  best_model_save_path="./logs/", log_path="./logs/"):
         super(CustomEvalCallback, self).__init__(eval_env=eval_env, verbose=verbose, eval_freq=eval_freq, 
                                              deterministic=deterministic, render=render, 
@@ -26,6 +26,7 @@ class CustomEvalCallback(EvalCallback):
         self.detailed = detailed
         self.eval_steps = 0
         self.eval_env = eval_env
+        self.framedrop = framedrop
         wandb.define_metric("Agent iterations")
         print("Eval envs: {}".format(self.parallel_envs))
         # Those variables will be accessible in the callback
@@ -62,13 +63,15 @@ class CustomEvalCallback(EvalCallback):
             #print("Global keys: {}".format(self.globals.keys()))
             #print("Rewards: {}".format(self.locals["rewards"]))
             #print(self.locals["callback"])
-            mean_reward, _, sampled_observations = evaluate_policy(self.model, self.eval_env, 
+            mean_reward, std_reward, mean_x_pos, std_x_pos, sampled_observations,  = evaluate_policy(self.model, self.eval_env, 
                                                                    n_eval_episodes=5, deterministic=True)
-            video_array = np.concatenate(sampled_observations, axis = 0)
+            video_array = np.concatenate(sampled_observations[::6], axis = 0)
             print(video_array.shape)
-            wandb.log({"Evaluation mean reward": float(mean_reward),
+            wandb.log({"Evaluation/mean reward": float(mean_reward),
                        "Agent steps": self.n_calls})
-            wandb.log({"Agent evaluation": wandb.Video(video_array, fps=30, format="gif"),
+            wandb.log({"Evaluation/mean x position": float(mean_x_pos),
+                       "Agent steps": self.n_calls})
+            wandb.log({"Agent evaluation": wandb.Video(video_array, fps=30/self.framedrop, format="gif"),
                         "Agent steps": self.n_calls})
         #print(self.locals["eval_env"].observation_buffer[-1])
         return True
@@ -80,15 +83,18 @@ def evaluate_policy(
 ):
     episode_rewards = []
     episode_lengths = []
+    episode_x_pos = []
     sampled_observations = []
     for i in range(n_eval_episodes):
         done = np.array([False])
         observation = env.reset()
         current_reward = 0
         current_length = 0
+        max_x_pos = -1
         while not done[0]:
             action, states = model.predict(observation, deterministic=deterministic)
             observation, reward, done, info = env.step(action)
+            max_x_pos = max(info[0]["x_pos"], max_x_pos)
             current_reward += reward
             current_length += 1
             if i % n_eval_episodes == 0:
@@ -97,11 +103,15 @@ def evaluate_policy(
         if done[0]:
             episode_rewards.append(current_reward)
             episode_lengths.append(current_length)
+            episode_x_pos.append(max_x_pos)
     
     episode_rewards = np.array(episode_rewards)
     episode_lengths = np.array(episode_lengths)
+    episode_x_pos = np.array(episode_x_pos)
     
     mean_reward = np.mean(episode_rewards)
     std_reward = np.std(episode_rewards)
+    mean_x_pos = np.mean(episode_x_pos)
+    std_x_pos = np.std(episode_x_pos)
 
-    return mean_reward, std_reward, sampled_observations
+    return mean_reward, std_reward, mean_x_pos, std_x_pos, sampled_observations
