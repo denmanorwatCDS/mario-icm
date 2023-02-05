@@ -83,6 +83,6 @@ if __name__=="__main__":
 
     log_path = 'sb3_logs'
     format = 'tensorboard'
-    model.set_logger(A2CLogger(log_path, format))
+    model.set_logger(A2CLogger(log_path, format, num_workers=parallel_envs))
 
     model.learn(total_timesteps=float(1e8), callback=[callback, eval_callback])

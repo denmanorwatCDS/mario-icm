@@ -126,7 +126,8 @@ class A2C(OnPolicyAlgorithm):
         self.motivation_optim = motivation_optim
         self.action_space_size = action_space_size
         self.beta = beta
-
+        
+        
         # Update optimizer inside the policy if we want to use RMSProp
         # (original implementation) rather than Adam
         if use_rms_prop and "optimizer_class" not in self.policy_kwargs:
@@ -181,8 +182,9 @@ class A2C(OnPolicyAlgorithm):
             # Optimization step
             self.policy.optimizer.zero_grad()
             loss.backward()
-
-            self.train_motivation()
+            
+            if self.reward_type in ["All", "Intrinsic"]:
+                self.train_motivation()
 
             # Clip grad norm
             th.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)

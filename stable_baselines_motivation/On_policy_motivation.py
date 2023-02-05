@@ -78,6 +78,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
         supported_action_spaces: Optional[Tuple[gym.spaces.Space, ...]] = None,
+        reward_type = "Intrinsic",
     ):
 
         super().__init__(
@@ -105,6 +106,8 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         self.rollout_buffer = None
         self.forward_backward_motivation = forward_backward_motivation
         self.motivation_buffer = motivation_buffer
+        assert reward_type in ["Extrinsic", "Intrinsic", "All"], "Unknown mode. Available modes are: \"Extrinsic\", \"Intrinsic\", \"All\""
+        self.reward_type = reward_type
 
         if _init_setup_model:
             self._setup_model()
@@ -165,6 +168,9 @@ class OnPolicyAlgorithm(BaseAlgorithm):
 
         callback.on_rollout_start()
 
+        # Modified
+        cum_rewards = np.zeros(self.n_envs)
+        # Modified
         while n_steps < n_rollout_steps:
             if self.use_sde and self.sde_sample_freq > 0 and n_steps % self.sde_sample_freq == 0:
                 # Sample a new noise matrix
@@ -182,18 +188,33 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             if isinstance(self.action_space, gym.spaces.Box):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
 
-            new_obs, rewards, dones, infos = env.step(clipped_actions)
-            
+            new_obs, ext_rewards, dones, infos = env.step(clipped_actions)
             # Modified
-            torch_old_obs = th.permute(obs_tensor, (0, 3, 1, 2)).to(th.float32).to(self.device)
-            torch_new_obs =\
-                th.permute(obs_as_tensor(new_obs, self.device), (0, 3, 1, 2)).to(th.float32).to(self.device)
-            torch_action = th.tensor(actions).to(self.device)
-            self.motivation_buffer.add_triplet(torch_old_obs, torch_action, torch_new_obs)
-            new_reward =\
-                self.forward_backward_motivation.intrinsic_reward(torch_old_obs, torch_action, 
+            rewards = ext_rewards
+            
+            
+            if self.reward_type in ["Intrinsic", "All"]:
+                torch_old_obs = th.permute(obs_tensor, (0, 3, 1, 2)).to(th.float32).to(self.device)
+                torch_new_obs =\
+                    th.permute(obs_as_tensor(new_obs, self.device), (0, 3, 1, 2)).to(th.float32).to(self.device)
+                torch_action = th.tensor(actions).to(self.device)
+                self.motivation_buffer.add_triplet(torch_old_obs, torch_action, torch_new_obs)
+                new_reward =\
+                    self.forward_backward_motivation.intrinsic_reward(torch_old_obs, torch_action, 
                                                                   torch_new_obs)
-            rewards = np.clip(new_reward, -1, 1)
+                if self.reward_type == "All":
+                    rewards += np.clip(new_reward, -1, 1)
+                elif self.reward_type == "Intrinsic":
+                    rewards = np.clip(new_reward, -1, 1)
+            
+
+            x_pos = np.array([info["x_pos"] for info in infos])
+
+            self.logger.record("train/extrinsic_reward", ext_rewards)
+            for i, done in enumerate(dones):
+                if done:
+                    self.logger.record("train/episode", i)
+                    self.logger.record("train/x_coordinate", (x_pos[i], i))
             # Modified
 
             self.num_timesteps += env.num_envs
