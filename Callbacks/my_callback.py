@@ -2,17 +2,16 @@ from stable_baselines3.common.callbacks import BaseCallback
 import wandb
 import torch
 import numpy as np
-
 class CustomCallback(BaseCallback):
     """
     A custom callback that derives from ``BaseCallback``.
     :param verbose: Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages
     """
 
-    def __init__(self, action_space_size, parallel_envs, quantity_of_logged_agents=4,
+    def __init__(self, action_space_size, parallel_envs, HYPERPARAMS, quantity_of_logged_agents=4,
                  verbose=0, detailed = True):
         super(CustomCallback, self).__init__(verbose)
-        run = wandb.init(project = "Cartpole")
+        run = wandb.init(project = "Cartpole", config=HYPERPARAMS)
         wandb.define_metric("Agent steps")
         self.episodic_rewards = [0]*min(parallel_envs, quantity_of_logged_agents)
         self.agent_steps = 0
@@ -104,7 +103,7 @@ class CustomCallback(BaseCallback):
     def log_actions_and_rewards(self, probs_by_agent):
         action_reward_dict = dict()
         for i, actions in enumerate(probs_by_agent):
-            action_reward_dict["Agent #{} reward".format(i)] = self.episodic_rewards[i]
+            action_reward_dict["Rewards/Agent #{} reward".format(i)] = self.episodic_rewards[i]
             for j, action in enumerate(actions):
                 action_reward_dict["Agent #{} action #{} probability".format(i, j)] = action
         action_reward_dict["Agent steps"] = self.n_calls
@@ -120,7 +119,7 @@ class CustomCallback(BaseCallback):
     def log_episodic_reward(self, dones):
         for i, episodic_reward in enumerate(self.episodic_rewards):
             if dones[i]:
-                wandb.log({"Episodic reward of agent #{}".format(i): episodic_reward,
+                wandb.log({"Rewards/Episodic reward of agent #{}".format(i): episodic_reward,
                            "Agent steps": self.n_calls})
 
     def log_current_observation(self, obs, dones):

@@ -10,6 +10,7 @@ HYPERPARAMS = {
 "FPS of video": ENV_CFG.FPS,
 "Learning rate of A2C": A2C_CFG.LR,
 "Number_of_steps": A2C_CFG.NUM_STEPS,
+"Number of parallel agents": A2C_CFG.NUM_AGENTS,
 "Gamma": A2C_CFG.GAMMA,
 "GAE_lambda": A2C_CFG.GAE_LAMBDA,
 "Entropy_coefficient": A2C_CFG.ENTROPY_COEF,
@@ -22,6 +23,7 @@ HYPERPARAMS = {
 "BETA ICM - weighted sum of forward model and backward model loss": ICM_CFG.BETA,
 "Hidden neurons in linear layer of all models in ICM": ICM_CFG.HIDDEN_LAYERS,
 "FMAP QTY in all convolutional layers": ICM_CFG.FMAP_QTY,
+"Learn ICM only on latest batch. If true, buffer size and batch size are irrelevant": ICM_CFG.SAVE_LATEST,
 "Buffer size of ICM buffer": ICM_CFG.BUFFER_SIZE,
 "Batch size of ICM buffer": ICM_CFG.BATCH_SIZE,
-"Learning rate of ICM": ICM_CFG.LR}
+"Learning rate of ICM": ICM_CFG.LR,}
