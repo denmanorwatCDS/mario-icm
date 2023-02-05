@@ -102,5 +102,5 @@ class ICM(nn.Module):
                 self.forward_net(self.feature(observation), action)
             real_state = self.feature(next_observation)
             intrinsic_reward =\
-                self.eta*((predicted_state-real_state)**2).sum().cpu().detach().numpy()
+                self.eta*((predicted_state-real_state)**2).sum(dim=1).cpu().detach().numpy()
         return intrinsic_reward

@@ -52,6 +52,7 @@ class CustomCallback(BaseCallback):
         """
         pass
 
+
     def _on_step(self) -> bool:
         """
         This method will be called by the model after each call to `env.step()`.
@@ -66,9 +67,6 @@ class CustomCallback(BaseCallback):
         #print(self.locals["obs_tensor"].shape)
         #print("Rewards: {}".format(self.locals["rewards"]))
 
-        print(self.locals.keys())
-        print(self.locals["callback"])
-        print(self.locals["rewards"])
         agents_rewards = self.locals["rewards"][:self.quantity_of_logged_agents]
         agents_dones = self.locals["dones"][:self.quantity_of_logged_agents]
         agents_obs = self.locals["obs_tensor"][:self.quantity_of_logged_agents]
@@ -81,17 +79,20 @@ class CustomCallback(BaseCallback):
         self.agent_steps += 1
         return True
 
+
     def _on_rollout_end(self) -> None:
         """
         This event is triggered before updating the policy.
         """
         pass
 
+
     def _on_training_end(self) -> None:
         """
         This event is triggered before exiting the `learn()` method.
         """
         pass
+
 
     def __get_model_probs(self, obs):
         action_distribution = self.model.policy.get_distribution(obs)
@@ -103,6 +104,7 @@ class CustomCallback(BaseCallback):
             resulting_probabilities.append(probs)
         return torch.stack(resulting_probabilities).transpose(0, 1)
     
+
     def log_actions_and_rewards(self, probs_by_agent):
         action_reward_dict = dict()
         for i, actions in enumerate(probs_by_agent):
@@ -112,6 +114,7 @@ class CustomCallback(BaseCallback):
         action_reward_dict["Agent steps"] = self.n_calls
         wandb.log(action_reward_dict)
     
+
     def save_rewards(self, reward_by_agent, is_agent_done):
         for i, reward_done in enumerate(zip(reward_by_agent, is_agent_done)):
             reward, done = reward_done
@@ -119,11 +122,13 @@ class CustomCallback(BaseCallback):
             if done:
                 self.episodic_rewards[i] = 0
     
+
     def log_episodic_reward(self, dones):
         for i, episodic_reward in enumerate(self.episodic_rewards):
             if dones[i]:
                 wandb.log({"Rewards/Episodic reward of agent #{}".format(i): episodic_reward,
                            "Agent steps": self.n_calls})
+
 
     def log_current_observation(self, obs, dones):
         #print("Obs shape: {}".format(obs.shape))
