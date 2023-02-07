@@ -20,22 +20,13 @@ class ICMBuffer():
     def add_triplet(self, observation, action, next_observation):
         print("Current buffer size: {}/{}".format(len(self.buffer), self.buffer_size))
         for i in range(observation.shape[0]):
-            if abs(self.buffer_size-len(self.buffer))<21 and self.save_as_train:
-                print("Dump started!")
-                self.save_as_train = False
-                for i in range(64):
-                    print(i)
-                    subbuffer = self.buffer[i::16]
-                    with open('pickles/mario_buffer_{}.pkl'.format(i), 'wb') as handle:
-                        pickle.dump(subbuffer, handle)
-                    print("Dumped!")
             if len(self.buffer) < self.buffer_size:
-                
                 self.buffer.append((observation[i], action[i], next_observation[i]))
 
             elif not self.save_latest:
                 swap_index = np.random.choice(self.buffer_size)
                 self.buffer[swap_index] = (observation[i], action[i], next_observation[i])
+
             elif self.save_latest:
                 del self.buffer[0]
                 self.buffer.append((observation[i], action[i], next_observation[i]))
