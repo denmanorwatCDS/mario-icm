@@ -30,6 +30,7 @@ class SimpleinverseNet(nn.Module):
     def forward(self, previous_state, next_state):
         cat_state = torch.cat([previous_state, next_state], 1)
 
+        #TODO: Authors of the book added softmax here
         processed_state = self.simple_classifier(cat_state)
         return processed_state
 
@@ -38,6 +39,7 @@ class SimpleinverseNet(nn.Module):
 class SimplefeatureNet(nn.Module):
     def __init__(self, temporal_channels, feature_map_qty):
         super().__init__()
+        # TODO No normalization. Maybe, they are not needed because of temporal channels
         self.simple_encoder =\
         nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
                                 out_channels = feature_map_qty, kernel_size = 3, stride = 2, 
@@ -85,9 +87,9 @@ class ICM(nn.Module):
         next_state = self.feature(next_observation)
         action_logits = self.inverse_net(state, next_state)
         # TODO: change to detach, maybe torch.no_grad() isn't needed
-        # with torch.no_grad():
-        const_state = self.feature(observation)
-        const_next_state = self.feature(next_observation)
+        with torch.no_grad():
+            const_state = self.feature(observation)
+            const_next_state = self.feature(next_observation)
         predicted_state = self.forward_net(const_state, action)
         return action_logits, predicted_state, const_next_state
 

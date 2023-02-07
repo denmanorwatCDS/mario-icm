@@ -91,6 +91,7 @@ class A2C(OnPolicyAlgorithm):
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
+        reward_type="Intrinsic",
     ):
 
         super().__init__(
@@ -120,6 +121,7 @@ class A2C(OnPolicyAlgorithm):
                 spaces.MultiDiscrete,
                 spaces.MultiBinary,
             ),
+            reward_type=reward_type,
         )
 
         self.normalize_advantage = normalize_advantage
@@ -243,6 +245,8 @@ class A2C(OnPolicyAlgorithm):
 
         state_prediction_loss =\
             (1/2*(next_states-predicted_states)**2).sum(dim = 1).mean()
+
+        
         action_prediction_loss =\
             CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         icm_loss = (self.beta*state_prediction_loss + 

@@ -192,7 +192,6 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             # Modified
             rewards = ext_rewards
             
-            
             if self.reward_type in ["Intrinsic", "All"]:
                 torch_old_obs = th.permute(obs_tensor, (0, 3, 1, 2)).to(th.float32).to(self.device)
                 torch_new_obs =\

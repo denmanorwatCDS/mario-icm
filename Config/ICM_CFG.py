@@ -11,13 +11,13 @@ HIDDEN_LAYERS = 256
 FMAP_QTY = 32
 
 # Learn only on latest observations. If true, BUFFER_SIZE and BATCH_SIZE irrelevant
-SAVE_LATEST = True
+SAVE_LATEST = False
 
 # Buffer size of ICM buffer
-BUFFER_SIZE = 16_384
+BUFFER_SIZE = 64_384#4
 
 # Batch size of ICM buffer
-BATCH_SIZE = 1024
+BATCH_SIZE = 128
 
 # ICM learning rate
 LR = 1e-03

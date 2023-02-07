@@ -52,7 +52,7 @@ if __name__=="__main__":
 
     # ICM
     icm_optimizer = optim.Adam(globals()["icm"].parameters(), lr=ICM_CFG.LR)
-    icm_buffer = ICMBuffer(save_latest=ICM_CFG.SAVE_LATEST)
+    icm_buffer = ICMBuffer(save_latest=ICM_CFG.SAVE_LATEST, buffer_size=ICM_CFG.BUFFER_SIZE, sample_size=ICM_CFG.BATCH_SIZE)
     
     # Eval and train environments
     env = make_vec_env("SuperMarioBros-v0", n_envs=parallel_envs, seed=0, 
@@ -65,17 +65,16 @@ if __name__=="__main__":
     callback = CustomCallback(parallel_envs=parallel_envs, action_space_size=env.action_space.n, 
                               HYPERPARAMS=HYPERPARAMS)
     eval_callback =\
-        CustomEvalCallback(eval_env=eval_env, eval_freq=10000, parallel_envs=1, 
+        CustomEvalCallback(eval_env=eval_env, eval_freq=500000, parallel_envs=1, 
                            action_space_size=eval_env.action_space.n)
 
     # A2C parameters
-    policy_kwargs = {"optimizer_class": RMSpropTFLike, "optimizer_kwargs": {"eps": 1e-05},
-                     "features_extractor_class": ActorCritic, 
+    policy_kwargs = {"features_extractor_class": ActorCritic, 
                      "net_arch": [dict(pi=[A2C_CFG.POLICY_NEURONS], vf=[A2C_CFG.VALUE_NEURONS])]}
     
     model = A2C("CnnPolicy", env, forward_backward_motivation=icm, motivation_buffer=icm_buffer,
                 motivation_optim=icm_optimizer, action_space_size=ENV_CFG.ACTION_SPACE_SIZE,
-                beta=ICM_CFG.BETA,
+                beta=ICM_CFG.BETA, reward_type="Intrinsic",
                 verbose=1, learning_rate=A2C_CFG.LR, use_rms_prop=A2C_CFG.RMS_PROP, 
                 policy_kwargs=policy_kwargs, n_steps=A2C_CFG.NUM_STEPS, seed=ENV_CFG.SEED, 
                 max_grad_norm=A2C_CFG.MAX_GRAD_NORM, gamma=A2C_CFG.GAMMA, vf_coef=A2C_CFG.VALUE_LOSS_COEF,
