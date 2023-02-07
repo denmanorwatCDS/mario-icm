@@ -4,16 +4,17 @@ import torch as th
 from gym import spaces
 from torch.nn import functional as F
 
-from stable_baselines_motivation.On_policy_motivation import OnPolicyAlgorithm
+from stable_baselines_motivation.On_policy_motivation import OnPolicyAlgorithmMotivation
 #from stable_baselines3.common.on_policy_algorithm import OnPolicyAlgorithm
 from stable_baselines3.common.policies import ActorCriticCnnPolicy, ActorCriticPolicy, BasePolicy, MultiInputActorCriticPolicy
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
 from stable_baselines3.common.utils import explained_variance
+from stable_baselines3.a2c.a2c import A2C
 
 A2CSelf = TypeVar("A2CSelf", bound="A2C")
 
 
-class A2C(OnPolicyAlgorithm):
+class A2CWithMotivation(OnPolicyAlgorithmMotivation):
     """
     Advantage Actor Critic (A2C)
 
