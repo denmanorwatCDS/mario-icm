@@ -29,4 +29,4 @@ def minibatch_train(replay, ICM, ICM_type, Qmodel, qloss, use_extrinsic=True):
     indices = indices.tolist()
     reward_target[indices] = reward.squeeze()
     q_loss = 1e5 * qloss(F.normalize(reward_pred), F.normalize(reward_target.detach()))
-    return forward_pred_err, inverse_pred_err, q_loss
+    return forward_pred_err, inverse_pred_err, q_loss, i_reward

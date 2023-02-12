@@ -115,15 +115,21 @@ for i in range(epochs):
     inverse_pred_errors = {}
     q_losses = {}
     losses = {}
+    intrinsic_rewards = {}
     for type_of_icm, icm in ICMs.items():
-        forward_pred_err, inverse_pred_err, q_loss = minibatch_train(replay, icm, type_of_icm, Qmodel, qloss, use_extrinsic=True) #H
+        forward_pred_err, inverse_pred_err, q_loss, i_reward = minibatch_train(replay, icm, type_of_icm, Qmodel, qloss, use_extrinsic=True) #H
         forward_pred_errors[type_of_icm] = forward_pred_err
         inverse_pred_errors[type_of_icm] = inverse_pred_err
         q_losses[type_of_icm] = q_loss
+        intrinsic_rewards[type_of_icm] = i_reward
+        if len(ICMs)>1:
+            if type_of_icm=="mine":
+                q_loss = 0
         losses[type_of_icm] = loss_fn(q_loss, forward_pred_err, inverse_pred_err) #I
     for type_of_loss, loss in losses.items():
         loss.backward()
         wandb.log({"DQN loss {}".format(type_of_loss): q_loss.mean().item(),
                    "Forward model loss {}".format(type_of_loss): forward_pred_err.flatten().mean().item(),
-                   "Inverse model loss {}".format(type_of_loss): inverse_pred_err.flatten().mean().item()}, step=i)
+                   "Inverse model loss {}".format(type_of_loss): inverse_pred_err.flatten().mean().item(),
+                   "Intrinsic reward of {}".format(type_of_loss): i_reward}, step=i)
     opt.step()
