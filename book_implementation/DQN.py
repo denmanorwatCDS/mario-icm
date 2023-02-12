@@ -4,14 +4,14 @@ from torch.nn import functional as F
 class Qnetwork(nn.Module):
     def __init__(self):
         super(Qnetwork, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32,
-        kernel_size=(3,3), stride=2, padding=1)
+        #in_channels, out_channels, kernel_size, stride=1, padding=0
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3,3), stride=2, padding=1)
         self.conv2 = nn.Conv2d(32, 32, kernel_size=(3,3), stride=2, padding=1)
         self.conv3 = nn.Conv2d(32, 32, kernel_size=(3,3), stride=2, padding=1)
         self.conv4 = nn.Conv2d(32, 32, kernel_size=(3,3), stride=2, padding=1)
-        self.linear1 = nn.Linear(288, 100)
-        self.linear2 = nn.Linear(100, 12)
-
+        self.linear1 = nn.Linear(288,100)
+        self.linear2 = nn.Linear(100,12)
+        
     def forward(self,x):
         x = F.normalize(x)
         y = F.elu(self.conv1(x))
@@ -22,5 +22,5 @@ class Qnetwork(nn.Module):
         y = y.view(y.shape[0], -1, 32)
         y = y.flatten(start_dim=1)
         y = F.elu(self.linear1(y))
-        y = self.linear2(y)
+        y = self.linear2(y) #size N, 12
         return y
