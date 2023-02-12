@@ -128,8 +128,8 @@ for i in range(epochs):
         losses[type_of_icm] = loss_fn(q_loss, forward_pred_err, inverse_pred_err) #I
     for type_of_loss, loss in losses.items():
         loss.backward()
-        wandb.log({"DQN loss {}".format(type_of_loss): q_loss.mean().item(),
-                   "Forward model loss {}".format(type_of_loss): forward_pred_err.flatten().mean().item(),
-                   "Inverse model loss {}".format(type_of_loss): inverse_pred_err.flatten().mean().item(),
-                   "Intrinsic reward of {}".format(type_of_loss): i_reward}, step=i)
+        wandb.log({"DQN loss {}".format(type_of_loss): q_losses[type_of_loss].mean().item(),
+                   "Forward model loss {}".format(type_of_loss): forward_pred_errors[type_of_loss].flatten().mean().item(),
+                   "Inverse model loss {}".format(type_of_loss): inverse_pred_errors[type_of_loss].flatten().mean().item(),
+                   "Mean intrinsic reward of {}".format(type_of_loss): intrinsic_rewards[type_of_icm].flatten().mean().item()}, step=i)
     opt.step()
