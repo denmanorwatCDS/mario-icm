@@ -10,7 +10,23 @@ def minibatch_train(replay, ICM, ICM_output, Qmodel, qloss, use_extrinsic=False,
     reward_batch = reward_batch.view(reward_batch.shape[0],1)
     if ICM_output == "losses":
         forward_pred_err, inverse_pred_err = ICM(state1_batch, action_batch, state2_batch)
+        forward_pred_reward = forward_pred_err
     if ICM_output == "predictions":
+        predicted_actions, predicted_states, next_states =\
+            ICM(state1_batch, action_batch, state2_batch)
+        CE_loss = nn.CrossEntropyLoss()
+        # TODO: remove self.action_space_size and self.beta into ICM
+        action_one_hot = F.one_hot(action_batch.flatten(), num_classes = 12)
+        inverse_pred_err =\
+            params["inverse_scale"]*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
+        # WARNING: Pathak had 1/2, authors of the book hand't!
+        forward_pred_err =\
+            params["forward_scale"]*((next_states-predicted_states)**2).sum(dim = 1).mean()
+        forward_pred_reward = torch.from_numpy(ICM.intrinsic_reward(state1_batch, action_batch, state2_batch).reshape(-1, 1))
+        
+        #icm_loss = (self.beta*state_prediction_loss + 
+        #                (1-self.beta)*action_prediction_loss)
+        """
         forward_loss = nn.MSELoss(reduction='none')
         inverse_loss = nn.CrossEntropyLoss(reduction='none')
         action_pred, state2_hat_pred, state2_hat = ICM(state1_batch, action_batch, state2_batch)
@@ -18,7 +34,8 @@ def minibatch_train(replay, ICM, ICM_output, Qmodel, qloss, use_extrinsic=False,
             state2_hat.detach()).sum(dim=1).unsqueeze(dim=1)
         inverse_pred_err = params["inverse_scale"] * inverse_loss(action_pred, \
             action_batch.detach().flatten()).unsqueeze(dim=1)
-    i_reward = (1. / params['eta']) * forward_pred_err
+        """
+    i_reward = (1. / params['eta']) * forward_pred_reward
     reward = i_reward.detach()
     if use_extrinsic:
         reward += reward_batch

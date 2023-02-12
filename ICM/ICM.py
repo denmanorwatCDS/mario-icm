@@ -35,7 +35,7 @@ class SimpleinverseNet(nn.Module):
     def forward(self, previous_state, next_state):
         cat_state = torch.cat([previous_state, next_state], 1)
 
-        #TODO: Authors of the book added softmax here
+        #WARNING: Authors of the book added softmax here
         processed_state = self.simple_classifier(cat_state)
         processed_state = F.softmax(processed_state)
         return processed_state

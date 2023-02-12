@@ -43,7 +43,7 @@ ICMInitializer(encoder, forward_model, inverse_model)
 ICMInitializer(my_ICM.feature, my_ICM.forward_net, my_ICM.inverse_net)
 
 book_ICM = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
-my_ICM = getICM(my_ICM.feature, my_ICM.forward_net, my_ICM.inverse_net, inverse_loss, forward_loss)
+# my_ICM = getICM(my_ICM.feature, my_ICM.forward_net, my_ICM.inverse_net, inverse_loss, forward_loss)
 
 wandb.init()
 
@@ -99,7 +99,7 @@ for i in range(epochs):
     if len(replay.memory) < params['batch_size']:
         continue
     replay.set_random_ind()
-    forward_pred_err_mine, inverse_pred_err_mine, q_locc = minibatch_train(replay = replay, ICM = my_ICM, ICM_output="losses",
+    forward_pred_err_mine, inverse_pred_err_mine, q_locc = minibatch_train(replay = replay, ICM = my_ICM, ICM_output="predictions",
                                                                  Qmodel = Qmodel, qloss=qloss, use_only_extrinsic=True, 
                                                                  use_extrinsic=True)
     forward_pred_err_book, inverse_pred_err_book, q_loss = minibatch_train(replay = replay, ICM = book_ICM, ICM_output="losses",
