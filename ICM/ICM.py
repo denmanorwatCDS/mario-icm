@@ -99,6 +99,21 @@ class ICM(nn.Module):
         return action_logits, predicted_state, const_next_state
 
 
+    def get_losses(self, observation, action, next_observation, inv_scale, forward_scale):
+        predicted_actions, predicted_states, next_states =\
+            self(observation, action, next_observation)
+        CE_loss = nn.CrossEntropyLoss()
+        # TODO: remove self.action_space_size and self.beta into ICM
+        action_one_hot = F.one_hot(action.flatten(), num_classes = 12)
+        inverse_pred_err =\
+            inv_scale*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
+        # WARNING: Pathak had 1/2, authors of the book hand't!
+        forward_pred_err =\
+            forward_scale*((next_states-predicted_states)**2).sum(dim = 1).mean()
+        return forward_pred_err, inverse_pred_err
+        
+
+
     def intrinsic_reward(self, observation, action, next_observation):
         intrinsic_reward = 0
         if type(action) == int:

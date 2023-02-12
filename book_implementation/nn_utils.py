@@ -11,6 +11,13 @@ def loss_fn(q_loss, inverse_loss, forward_loss):
     loss = loss_ + params['lambda'] * q_loss
     return loss
 
+def getQInitializer(Qmodel):
+    q_param_list = []
+    for layer in Qmodel.parameters():
+        q_param_list.append(layer.data)
+    def QInitializer(Qmodel):
+        for i, layer in enumerate(Qmodel.parameters()):
+            layer.data = q_param_list[i]
 
 def getICMInitializer(encoder, forward_model, inverse_model):
     encoder_list = []

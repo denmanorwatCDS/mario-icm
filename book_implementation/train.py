@@ -12,16 +12,8 @@ def minibatch_train(replay, ICM, ICM_output, Qmodel, qloss, use_extrinsic=False,
         forward_pred_err, inverse_pred_err = ICM(state1_batch, action_batch, state2_batch)
         forward_pred_reward = forward_pred_err
     if ICM_output == "predictions":
-        predicted_actions, predicted_states, next_states =\
-            ICM(state1_batch, action_batch, state2_batch)
-        CE_loss = nn.CrossEntropyLoss()
-        # TODO: remove self.action_space_size and self.beta into ICM
-        action_one_hot = F.one_hot(action_batch.flatten(), num_classes = 12)
-        inverse_pred_err =\
-            params["inverse_scale"]*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
-        # WARNING: Pathak had 1/2, authors of the book hand't!
-        forward_pred_err =\
-            params["forward_scale"]*((next_states-predicted_states)**2).sum(dim = 1).mean()
+        forward_pred_err, inverse_pred_err = ICM.get_losses(state1_batch, action_batch, state2_batch, 
+                                                            inv_scale=params["inverse_scale"], forward_scale=params["forward_scale"])
         forward_pred_reward = torch.from_numpy(ICM.intrinsic_reward(state1_batch, action_batch, state2_batch).reshape(-1, 1))
         
         #icm_loss = (self.beta*state_prediction_loss + 
