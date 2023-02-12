@@ -18,6 +18,12 @@ from collections import deque
 import wandb
 
 from ICM.ICM import ICM
+import random
+
+torch.manual_seed(42)
+random.seed(42)
+np.random.seed(42)
+torch.backends.cudnn.benchmark = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument("ICM_type", help="Specify which version of ICM do you want to use (Or both). Valid options: {book, mine, both}")
@@ -27,7 +33,7 @@ ICM_type = args.ICM_type
 # gym_super_mario_bros.make()
 env = gym.make("SuperMarioBros-v0")
 env = JoypadSpace(env, COMPLEX_MOVEMENT)
-replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=False)
+replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=True)
 Qmodel = Qnetwork()
 
 
@@ -117,7 +123,8 @@ for i in range(epochs):
     losses = {}
     intrinsic_rewards = {}
     for type_of_icm, icm in ICMs.items():
-        forward_pred_err, inverse_pred_err, q_loss, i_reward = minibatch_train(replay, icm, type_of_icm, Qmodel, qloss, use_extrinsic=True) #H
+        forward_pred_err, inverse_pred_err, q_loss, i_reward = minibatch_train(replay, icm, type_of_icm, Qmodel, qloss, 
+                                                                use_extrinsic=False) #H
         forward_pred_errors[type_of_icm] = forward_pred_err
         inverse_pred_errors[type_of_icm] = inverse_pred_err
         q_losses[type_of_icm] = q_loss
