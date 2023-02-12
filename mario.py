@@ -5,7 +5,7 @@ import gym
 import stable_baselines3
 import torch
 
-#from stable_baselines3.a2c.a2c import A2C
+from stable_baselines3.a2c.a2c import A2C
 from stable_baselines_motivation.A2C_with_ICM import A2CWithMotivation
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
@@ -79,6 +79,12 @@ if __name__=="__main__":
     policy_kwargs = {"features_extractor_class": ActorCritic, 
                      "net_arch": [dict(pi=[A2C_CFG.POLICY_NEURONS], vf=[A2C_CFG.VALUE_NEURONS])]}
     
+    model = A2C("CnnPolicy", env,
+                verbose=1, learning_rate=A2C_CFG.LR, use_rms_prop=A2C_CFG.RMS_PROP, 
+                policy_kwargs=policy_kwargs, n_steps=A2C_CFG.NUM_STEPS, seed=ENV_CFG.SEED, 
+                max_grad_norm=A2C_CFG.MAX_GRAD_NORM, gamma=A2C_CFG.GAMMA, vf_coef=A2C_CFG.VALUE_LOSS_COEF,
+                ent_coef=A2C_CFG.ENTROPY_COEF, gae_lambda=A2C_CFG.GAE_LAMBDA)
+    """
     model = A2CWithMotivation("CnnPolicy", env, forward_backward_motivation=icm, motivation_buffer=icm_buffer,
                 motivation_optim=icm_optimizer, action_space_size=ENV_CFG.ACTION_SPACE_SIZE,
                 beta=ICM_CFG.BETA, reward_type="Extrinsic",
@@ -86,7 +92,7 @@ if __name__=="__main__":
                 policy_kwargs=policy_kwargs, n_steps=A2C_CFG.NUM_STEPS, seed=ENV_CFG.SEED, 
                 max_grad_norm=A2C_CFG.MAX_GRAD_NORM, gamma=A2C_CFG.GAMMA, vf_coef=A2C_CFG.VALUE_LOSS_COEF,
                 ent_coef=A2C_CFG.ENTROPY_COEF, gae_lambda=A2C_CFG.GAE_LAMBDA)
-
+    """
     log_path = 'sb3_logs'
     format = 'tensorboard'
     model.set_logger(A2CLogger(log_path, format, num_workers=parallel_envs))
