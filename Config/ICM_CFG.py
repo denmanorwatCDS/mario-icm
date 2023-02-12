@@ -14,7 +14,7 @@ FMAP_QTY = 32
 SAVE_LATEST = False
 
 # Buffer size of ICM buffer
-BUFFER_SIZE = 64_384#4
+BUFFER_SIZE = 16_000#4
 
 # Batch size of ICM buffer
 BATCH_SIZE = 128

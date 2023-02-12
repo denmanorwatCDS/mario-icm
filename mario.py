@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+#os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 import gym
 import stable_baselines3
@@ -26,6 +26,10 @@ import gym_super_mario_bros
 from ICM.ICM import ICM
 from ICM.ICM_buffer import ICMBuffer
 from torch import optim
+import faulthandler
+import signal
+
+
 
 def atari_wrapper(env, clip_reward = True):
     """
@@ -43,6 +47,9 @@ def atari_wrapper(env, clip_reward = True):
     return env
 
 if __name__=="__main__":
+    print(os.getpid()) # 2084532
+    faulthandler.enable()
+    faulthandler.register(signal.SIGUSR1.value)
     parallel_envs = A2C_CFG.NUM_AGENTS # 20
     
     # Parallel environments
@@ -65,7 +72,7 @@ if __name__=="__main__":
     callback = CustomCallback(parallel_envs=parallel_envs, action_space_size=env.action_space.n, 
                               HYPERPARAMS=HYPERPARAMS)
     eval_callback =\
-        CustomEvalCallback(eval_env=eval_env, eval_freq=500000, parallel_envs=1, 
+        CustomEvalCallback(eval_env=eval_env, eval_freq=50000, parallel_envs=1, 
                            action_space_size=eval_env.action_space.n)
 
     # A2C parameters
@@ -74,7 +81,7 @@ if __name__=="__main__":
     
     model = A2CWithMotivation("CnnPolicy", env, forward_backward_motivation=icm, motivation_buffer=icm_buffer,
                 motivation_optim=icm_optimizer, action_space_size=ENV_CFG.ACTION_SPACE_SIZE,
-                beta=ICM_CFG.BETA, reward_type="Intrinsic",
+                beta=ICM_CFG.BETA, reward_type="Extrinsic",
                 verbose=1, learning_rate=A2C_CFG.LR, use_rms_prop=A2C_CFG.RMS_PROP, 
                 policy_kwargs=policy_kwargs, n_steps=A2C_CFG.NUM_STEPS, seed=ENV_CFG.SEED, 
                 max_grad_norm=A2C_CFG.MAX_GRAD_NORM, gamma=A2C_CFG.GAMMA, vf_coef=A2C_CFG.VALUE_LOSS_COEF,

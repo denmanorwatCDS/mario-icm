@@ -65,7 +65,7 @@ class CustomEvalCallback(EvalCallback):
             #print(self.locals["callback"])
             mean_reward, std_reward, mean_x_pos, std_x_pos, sampled_observations,  = evaluate_policy(self.model, self.eval_env, 
                                                                    n_eval_episodes=5, deterministic=True)
-            video_array = np.concatenate(sampled_observations[::6], axis = 0)
+            video_array = np.concatenate(sampled_observations[::self.framedrop], axis = 0)
             print(video_array.shape)
             wandb.log({"Evaluation/mean reward": float(mean_reward),
                        "Agent steps": self.n_calls})

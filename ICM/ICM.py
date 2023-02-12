@@ -2,19 +2,22 @@ import torch.nn.functional as F
 import torch
 from torch import nn
 from Config.ENV_CFG import DEVICE
+from torch import nn
 
 
 class Predictor(nn.Module):
     def __init__(self, action_dim, state_dim, hidden_layer_neurons):
-        super().__init__()
+        super(Predictor, self).__init__()
         self.action_dim = action_dim
         self.state_dim = state_dim
         self.simple_state_predictor = torch.nn.Sequential(nn.Linear(state_dim + action_dim, hidden_layer_neurons),
                                                           nn.ReLU(),
                                                           nn.Linear(hidden_layer_neurons, state_dim))
 
+
     def forward(self, state, action):
-        action = F.one_hot(action, num_classes = self.action_dim)
+        action = F.one_hot(action, num_classes = self.action_dim).squeeze()
+
         concat_info = torch.cat((state, action), dim = 1)
         predicted_state = self.simple_state_predictor(concat_info)
         return predicted_state
@@ -23,22 +26,24 @@ class Predictor(nn.Module):
 #TODO: add 256 to config
 class SimpleinverseNet(nn.Module):
     def __init__(self, state_dim, action_classes, hidden_layer_neurons):
-        super().__init__()
+        super(SimpleinverseNet, self).__init__()
         self.simple_classifier = torch.nn.Sequential(nn.Linear(2*state_dim, hidden_layer_neurons),
                                                      nn.ReLU(),
                                                      nn.Linear(hidden_layer_neurons, action_classes))
+
+
     def forward(self, previous_state, next_state):
         cat_state = torch.cat([previous_state, next_state], 1)
 
         #TODO: Authors of the book added softmax here
         processed_state = self.simple_classifier(cat_state)
+        processed_state = F.softmax(processed_state)
         return processed_state
-
 
 
 class SimplefeatureNet(nn.Module):
     def __init__(self, temporal_channels, feature_map_qty):
-        super().__init__()
+        super(SimplefeatureNet, self).__init__()
         # TODO No normalization. Maybe, they are not needed because of temporal channels
         self.simple_encoder =\
         nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
@@ -54,28 +59,28 @@ class SimplefeatureNet(nn.Module):
                       nn.Conv2d(in_channels = feature_map_qty, out_channels = feature_map_qty, 
                                 kernel_size = 3, stride = 2, padding = 1),
                       nn.ELU(),
-                      nn.Flatten()) # 32*3*3
+                      nn.Flatten(start_dim=1)) # 32*3*3
         self.state_dim = 32*3*3
 
 
-    def forward(self, observation):
-        embeddings = self.simple_encoder(observation)
 
-        return embeddings
+    def forward(self, x):
+        x = F.normalize(x)
+        y = self.simple_encoder(x) #size N, 288
+        return y
 
 
 class ICM(nn.Module):
     def __init__(self, action_dim, temporal_channels,
                 hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32):
-        super().__init__()
+        super(ICM, self).__init__()
         self.eta = eta
         self.feature = SimplefeatureNet(temporal_channels, feature_map_qty).train()
 
         self.action_dim = action_dim
         self.state_dim = self.feature.state_dim
-        self.inverse_net = SimpleinverseNet(self.state_dim, action_dim, 
-                           hidden_layer_neurons).train()
-        self.forward_net = Predictor(action_dim, self.state_dim, hidden_layer_neurons).train()
+        self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons).train()
+        self.forward_net = Predictor(self.action_dim, self.state_dim, hidden_layer_neurons).train()
 
 
     def forward(self, observation, action, next_observation):
@@ -90,7 +95,7 @@ class ICM(nn.Module):
         with torch.no_grad():
             const_state = self.feature(observation)
             const_next_state = self.feature(next_observation)
-        predicted_state = self.forward_net(const_state, action)
+        predicted_state = self.forward_net(const_state, action.detach())
         return action_logits, predicted_state, const_next_state
 
 

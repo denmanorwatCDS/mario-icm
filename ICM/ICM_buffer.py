@@ -18,7 +18,6 @@ class ICMBuffer():
         self.buffer = []
 
     def add_triplet(self, observation, action, next_observation):
-        print("Current buffer size: {}/{}".format(len(self.buffer), self.buffer_size))
         for i in range(observation.shape[0]):
             if len(self.buffer) < self.buffer_size:
                 self.buffer.append((observation[i], action[i], next_observation[i]))
