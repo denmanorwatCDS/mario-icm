@@ -3,6 +3,8 @@ import torch
 from torch.nn import functional as F
 from torch import nn
 import math
+import os
+import pickle
 
 def loss_fn(q_loss, inverse_loss, forward_loss):
     loss_ = (1 - params['beta']) * inverse_loss
@@ -18,18 +20,32 @@ def getQInitializer(Qmodel):
     def QInitializer(Qmodel):
         for i, layer in enumerate(Qmodel.parameters()):
             layer.data = q_param_list[i]
+    return QInitializer
 
-def getICMInitializer(encoder, forward_model, inverse_model):
-    encoder_list = []
-    forward_list = []
-    inverse_list = []
-    for layer in encoder.parameters():
-        encoder_list.append(layer.data)
-    for layer in forward_model.parameters():
-        forward_list.append(layer.data)
-    for layer in inverse_model.parameters():
-        inverse_list.append(layer.data)
+def getICMInitializer(encoder, forward_model, inverse_model, seed):
+    if not os.path.isfile("/home/dvasilev/mario_icm/ICM_pickled/{}".format(seed)):
+        encoder_list = []
+        forward_list = []
+        inverse_list = []
+        seed = seed
+        for layer in encoder.parameters():
+            encoder_list.append(layer.data)
+        for layer in forward_model.parameters():
+            forward_list.append(layer.data)
+        for layer in inverse_model.parameters():
+            inverse_list.append(layer.data)
+        params = {"encoder": encoder_list,
+                "forward": forward_list,
+                "inverse": inverse_list}
+        print("Created weights for new seed: {}".format(seed))
+        with open("/home/dvasilev/mario_icm/ICM_pickled/{}".format(seed), 'wb') as handle:
+            pickle.dump(params, handle)
     def ICMInitializer(encoder, forward_model, inverse_model):
+        with open("/home/dvasilev/mario_icm/ICM_pickled/{}".format(seed), 'rb') as handle:
+            param_dict = pickle.load(handle)
+            encoder_list = param_dict["encoder"]
+            forward_list = param_dict["forward"]
+            inverse_list = param_dict["inverse"]
         for i, layer in enumerate(encoder.parameters()):
             layer.data = encoder_list[i]
         for i, layer in enumerate(forward_model.parameters()):

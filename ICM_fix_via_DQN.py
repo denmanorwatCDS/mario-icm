@@ -20,10 +20,25 @@ import wandb
 from ICM.ICM import ICM
 import random
 
-torch.manual_seed(42)
-random.seed(42)
-np.random.seed(42)
+SEED = 42
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
 torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.deterministic = True
+torch.use_deterministic_algorithms(True)
+
+mode = "Extrinsic"
+override_memory = None
+use_extrinsic = None
+if mode == "Extrinsic":
+    override_memory = True
+    use_extrinsic = True
+elif mode == "Intrinsic":
+    override_memory = False
+    use_extrinsic = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument("ICM_type", help="Specify which version of ICM do you want to use (Or both). Valid options: {book, mine, both}")
@@ -33,7 +48,7 @@ ICM_type = args.ICM_type
 # gym_super_mario_bros.make()
 env = gym.make("SuperMarioBros-v0")
 env = JoypadSpace(env, COMPLEX_MOVEMENT)
-replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=True)
+replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=override_memory)
 Qmodel = Qnetwork()
 
 
@@ -41,27 +56,27 @@ forward_loss = nn.MSELoss(reduction='none')
 inverse_loss = nn.CrossEntropyLoss(reduction='none')
 qloss = nn.MSELoss()
 
+
 ICMs = {}
 all_model_params = list(Qmodel.parameters())
 if ICM_type == "mine" or ICM_type == "both":
     ICMs["mine"] = ICM(action_dim=12, temporal_channels=3, eta=1)
+    ICMInitializer = getICMInitializer(ICMs["mine"].feature, ICMs["mine"].forward_net, ICMs["mine"].inverse_net, SEED)
     all_model_params += list(ICMs["mine"].forward_net.parameters()) + list(ICMs["mine"].inverse_net.parameters())
     all_model_params += list(ICMs["mine"].feature.parameters())
+    ICMInitializer(ICMs["mine"].feature, ICMs["mine"].forward_net, ICMs["mine"].inverse_net)
 
 if ICM_type == "book" or ICM_type == "both":
     encoder = EncoderModel()
     forward_model = ForwardModel()
     inverse_model = InverseModel()
+    ICMInitializer = getICMInitializer(encoder, forward_model, inverse_model, SEED)
     ICMs["book"] = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
     all_model_params += list(encoder.parameters()) + list(forward_model.parameters()) 
     all_model_params += list(inverse_model.parameters())
+    ICMInitializer(encoder, forward_model, inverse_model)
 
 opt = optim.Adam(lr=0.001, params=all_model_params)
-
-if ICM_type == "both":
-    ICMInitializer = getICMInitializer(encoder, forward_model, inverse_model)
-    ICMInitializer(encoder, forward_model, inverse_model)
-    ICMInitializer(ICMs["mine"].feature, ICMs["mine"].forward_net, ICMs["mine"].inverse_net)
 
 wandb.init()
 
@@ -124,7 +139,7 @@ for i in range(epochs):
     intrinsic_rewards = {}
     for type_of_icm, icm in ICMs.items():
         forward_pred_err, inverse_pred_err, q_loss, i_reward = minibatch_train(replay, icm, type_of_icm, Qmodel, qloss, 
-                                                                use_extrinsic=False) #H
+                                                                use_extrinsic=use_extrinsic) #H
         forward_pred_errors[type_of_icm] = forward_pred_err
         inverse_pred_errors[type_of_icm] = inverse_pred_err
         q_losses[type_of_icm] = q_loss

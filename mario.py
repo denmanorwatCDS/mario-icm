@@ -1,5 +1,5 @@
 import os
-#os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 import gym
 import stable_baselines3
