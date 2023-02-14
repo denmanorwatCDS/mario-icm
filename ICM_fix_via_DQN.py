@@ -33,18 +33,6 @@ torch.use_deterministic_algorithms(True)
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 env = JoypadSpace(env, COMPLEX_MOVEMENT) #C
 
-params = {
-    'batch_size':150,
-    'beta':0.2,
-    'lambda':0.1,
-    'eta': 1.0,
-    'gamma':0.2,
-    'max_episode_len':100,
-    'min_progress':15,
-    'action_repeats':6,
-    'frames_per_state':3
-}
-
 replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=False)
 Qmodel = Qnetwork()
 encoder = EncoderModel()
@@ -120,10 +108,10 @@ wandb.init()
 encoder = EncoderModel()
 forward_model = ForwardModel()
 inverse_model = InverseModel()
-ICM_model = ICM()
+ICM_model = ICM(action_dim=12, temporal_channels=3, eta=1)
 
-all_model_params = list(encoder.parameters()) #A
-all_model_params += list(forward_model.parameters()) + list(inverse_model.parameters())
+all_model_params = list(ICM_model.feature.parameters()) #A
+all_model_params += list(ICM_model.forward_net.parameters()) + list(ICM_model.inverse_net.parameters())
 opt = optim.Adam(lr=0.001, params=all_model_params)
 
 iterations = 25_000
@@ -133,7 +121,7 @@ for i in range(iterations):
     action_batch = action_batch.view(action_batch.shape[0],1) #A
     reward_batch = reward_batch.view(reward_batch.shape[0],1)
 
-    forward_pred_err, inverse_pred_err = ICM_model(state1_batch, action_batch, state2_batch) #B
+    forward_pred_err, inverse_pred_err = ICM_model.get_losses(state1_batch, action_batch, state2_batch, params["inverse_scale"], params["forward_scale"]) #B
     forward_pred_reward = forward_pred_err
     wandb.log({"Forward model loss colab": forward_pred_err.flatten().mean().item(),
                "Inverse model loss colab": inverse_pred_err.flatten().mean().item(),
