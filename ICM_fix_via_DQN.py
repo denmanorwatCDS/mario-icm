@@ -20,7 +20,7 @@ import wandb
 from ICM.ICM import ICM
 import random
 
-SEED = 42
+SEED = 322
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 random.seed(SEED)
@@ -66,6 +66,7 @@ if ICM_type == "mine" or ICM_type == "both":
     all_model_params += list(ICMs["mine"].feature.parameters())
     ICMInitializer(ICMs["mine"].feature, ICMs["mine"].forward_net, ICMs["mine"].inverse_net)
 
+
 if ICM_type == "book" or ICM_type == "both":
     encoder = EncoderModel()
     forward_model = ForwardModel()
@@ -80,7 +81,7 @@ opt = optim.Adam(lr=0.001, params=all_model_params)
 
 wandb.init()
 
-epochs = 100_000
+epochs = 10_000
 env.reset()
 state1 = prepare_initial_state(env.render('rgb_array'))
 eps=0.15

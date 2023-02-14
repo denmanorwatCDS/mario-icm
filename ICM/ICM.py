@@ -65,6 +65,7 @@ class SimplefeatureNet(nn.Module):
 
 
     def forward(self, x):
+        # WARNING Normalize
         x = F.normalize(x)
         y = self.simple_encoder(x) #size N, 288
         return y
@@ -84,7 +85,7 @@ class ICM(nn.Module):
 
 
     def forward(self, observation, action, next_observation):
-        # It is neccesary to NOT learn encoder when predicting future states
+        # It is neccesary to NOT learn encoder when predicting future states 
         # Encoder only learns when it guesses action by pair s_t & s_{t+1}
         # print("Obervation shape: {}".format(observation.shape))
         state = self.feature(observation)
@@ -104,7 +105,7 @@ class ICM(nn.Module):
             self(observation, action, next_observation)
         CE_loss = nn.CrossEntropyLoss()
         # TODO: remove self.action_space_size and self.beta into ICM
-        action_one_hot = F.one_hot(action.flatten(), num_classes = 12)
+        action_one_hot = F.one_hot(action.flatten(), num_classes = 12).detach()
         inverse_pred_err =\
             inv_scale*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         # WARNING: Pathak had 1/2, authors of the book hand't!
