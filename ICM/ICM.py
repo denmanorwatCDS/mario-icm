@@ -72,10 +72,12 @@ class SimplefeatureNet(nn.Module):
 
 
 class ICM(nn.Module):
-    def __init__(self, action_dim, temporal_channels,
-                hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32):
+    def __init__(self, action_dim, temporal_channels, inv_scale, forward_scale,
+                hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32,):
         super(ICM, self).__init__()
         self.eta = eta
+        self.inv_scale = inv_scale
+        self.forward_scale = forward_scale
         self.feature = SimplefeatureNet(temporal_channels, feature_map_qty).train()
 
         self.action_dim = action_dim
@@ -100,17 +102,17 @@ class ICM(nn.Module):
         return action_logits, predicted_state, const_next_state
 
 
-    def get_losses(self, observation, action, next_observation, inv_scale, forward_scale):
+    def get_losses(self, observation, action, next_observation):
         predicted_actions, predicted_states, next_states =\
             self(observation, action, next_observation)
         CE_loss = nn.CrossEntropyLoss()
         # TODO: remove self.action_space_size and self.beta into ICM
         action_one_hot = F.one_hot(action.flatten(), num_classes = 12).detach()
         inverse_pred_err =\
-            inv_scale*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
+            self.inv_scale*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         # WARNING: Pathak had 1/2, authors of the book hand't!
         forward_pred_err =\
-            forward_scale*((next_states-predicted_states)**2).sum(dim = 1).mean()
+            self.forward_scale*((next_states-predicted_states)**2).sum(dim = 1).mean()
         return forward_pred_err, inverse_pred_err
         
 
