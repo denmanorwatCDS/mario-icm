@@ -12,7 +12,6 @@ class ExperienceReplay:
         self.memory = [] 
         self.counter = 0
         self.override_memory = override_memory
-        self.ind = None
         
     def add_memory(self, state1, action, reward, state2):
         self.counter +=1 
@@ -29,15 +28,6 @@ class ExperienceReplay:
         shuffle(self.memory)
         
     def get_batch(self): #F
-        batch = [self.memory[i] for i in self.ind] #batch is a list of tuples
-        state1_batch = torch.stack([x[0].squeeze(dim=0) for x in batch],dim=0)
-        action_batch = torch.Tensor([x[1] for x in batch]).long()
-        reward_batch = torch.Tensor([x[2] for x in batch])
-        state2_batch = torch.stack([x[3].squeeze(dim=0) for x in batch],dim=0)
-        return state1_batch, action_batch, reward_batch, state2_batch
-
-    
-    def set_random_ind(self):
         if len(self.memory) < self.batch_size:
             batch_size = len(self.memory)
         else:
@@ -45,4 +35,11 @@ class ExperienceReplay:
         if len(self.memory) < 1:
             print("Error: No data in memory.")
             return None
-        self.ind = np.random.choice(np.arange(len(self.memory)), batch_size, replace=False)
+        #G
+        ind = np.random.choice(np.arange(len(self.memory)),batch_size,replace=False)
+        batch = [self.memory[i] for i in ind] #batch is a list of tuples
+        state1_batch = torch.stack([x[0].squeeze(dim=0) for x in batch],dim=0)
+        action_batch = torch.Tensor([x[1] for x in batch]).long()
+        reward_batch = torch.Tensor([x[2] for x in batch])
+        state2_batch = torch.stack([x[3].squeeze(dim=0) for x in batch],dim=0)
+        return state1_batch, action_batch, reward_batch, state2_batch

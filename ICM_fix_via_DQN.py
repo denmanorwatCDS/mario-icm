@@ -12,7 +12,7 @@ from book_implementation.DQN import Qnetwork
 from book_implementation.ICM_blocks import EncoderModel, ForwardModel, InverseModel
 from book_implementation.CONFIG import params
 from book_implementation.obs_preprocessing import prepare_initial_state, reset_env, prepare_state, prepare_multi_state
-from book_implementation.nn_utils import loss_fn, policy, getICM, getICMInitializer
+from book_implementation.nn_utils import loss_fn, policy, getICM
 from book_implementation.train import minibatch_train
 from collections import deque
 import wandb
@@ -30,58 +30,35 @@ torch.backends.cudnn.enabled = False
 torch.backends.cudnn.deterministic = True
 torch.use_deterministic_algorithms(True)
 
-mode = "Extrinsic"
-override_memory = None
-use_extrinsic = None
-if mode == "Extrinsic":
-    override_memory = True
-    use_extrinsic = True
-elif mode == "Intrinsic":
-    override_memory = False
-    use_extrinsic = False
+env = gym_super_mario_bros.make('SuperMarioBros-v0')
+env = JoypadSpace(env, COMPLEX_MOVEMENT) #C
 
-parser = argparse.ArgumentParser()
-parser.add_argument("ICM_type", help="Specify which version of ICM do you want to use (Or both). Valid options: {book, mine, both}")
-args = parser.parse_args()
-ICM_type = args.ICM_type
+params = {
+    'batch_size':150,
+    'beta':0.2,
+    'lambda':0.1,
+    'eta': 1.0,
+    'gamma':0.2,
+    'max_episode_len':100,
+    'min_progress':15,
+    'action_repeats':6,
+    'frames_per_state':3
+}
 
-# gym_super_mario_bros.make()
-env = gym.make("SuperMarioBros-v0")
-env = JoypadSpace(env, COMPLEX_MOVEMENT)
-replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=override_memory)
+replay = ExperienceReplay(N=1000, batch_size=params['batch_size'], override_memory=False)
 Qmodel = Qnetwork()
-
-
+encoder = EncoderModel()
+forward_model = ForwardModel()
+inverse_model = InverseModel()
 forward_loss = nn.MSELoss(reduction='none')
 inverse_loss = nn.CrossEntropyLoss(reduction='none')
+ICM_model = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
 qloss = nn.MSELoss()
-
-
-ICMs = {}
-all_model_params = list(Qmodel.parameters())
-if ICM_type == "mine" or ICM_type == "both":
-    ICMs["mine"] = ICM(action_dim=12, temporal_channels=3, eta=1)
-    ICMInitializer = getICMInitializer(ICMs["mine"].feature, ICMs["mine"].forward_net, ICMs["mine"].inverse_net, SEED)
-    all_model_params += list(ICMs["mine"].forward_net.parameters()) + list(ICMs["mine"].inverse_net.parameters())
-    all_model_params += list(ICMs["mine"].feature.parameters())
-    ICMInitializer(ICMs["mine"].feature, ICMs["mine"].forward_net, ICMs["mine"].inverse_net)
-
-
-if ICM_type == "book" or ICM_type == "both":
-    encoder = EncoderModel()
-    forward_model = ForwardModel()
-    inverse_model = InverseModel()
-    ICMInitializer = getICMInitializer(encoder, forward_model, inverse_model, SEED)
-    ICMs["book"] = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
-    all_model_params += list(encoder.parameters()) + list(forward_model.parameters()) 
-    all_model_params += list(inverse_model.parameters())
-    ICMInitializer(encoder, forward_model, inverse_model)
-
+all_model_params = list(Qmodel.parameters()) + list(encoder.parameters()) #A
+all_model_params += list(forward_model.parameters()) + list(inverse_model.parameters())
 opt = optim.Adam(lr=0.001, params=all_model_params)
 
-wandb.init()
-
-epochs = 10_000
+epochs = 1_000
 env.reset()
 state1 = prepare_initial_state(env.render('rgb_array'))
 eps=0.15
@@ -90,11 +67,14 @@ episode_length = 0
 switch_to_eps_greedy = 1000
 state_deque = deque(maxlen=params['frames_per_state'])
 e_reward = 0.
-last_x_pos = env.env.env._x_position
+last_x_pos = 0 #A
 ep_lengths = []
 use_explicit = False
 current_video = []
 for i in range(epochs):
+    if i % 25 == 0:
+        print("{}/{}".format(i, epochs))
+        print("Buffer size: {}".format(len(replay.memory)))
     opt.zero_grad()
     episode_length += 1
     q_val_pred = Qmodel(state1) #B
@@ -120,39 +100,45 @@ for i in range(epochs):
         else:
             last_x_pos = info['x_pos']
     if done:
-        wandb.log({"Maximal x pos": info['x_pos']}, step=i)
         ep_lengths.append(info['x_pos'])
         state1 = reset_env(env)
-        last_x_pos = env.env.env._x_position
+        #last_x_pos = env.env.env._x_position
         episode_length = 0
-        current_video = (np.stack(current_video, axis = 0)*255).astype(np.uint8)
-        wandb.log({"Agent train": wandb.Video(current_video, fps=30, format="gif")}, step=i)
-        current_video = []
     else:
         state1 = state2
     if len(replay.memory) < params['batch_size']:
         continue
-    replay.set_random_ind()
-    forward_pred_errors = {}
-    inverse_pred_errors = {}
-    q_losses = {}
-    losses = {}
-    intrinsic_rewards = {}
-    for type_of_icm, icm in ICMs.items():
-        forward_pred_err, inverse_pred_err, q_loss, i_reward = minibatch_train(replay, icm, type_of_icm, Qmodel, qloss, 
-                                                                use_extrinsic=use_extrinsic) #H
-        forward_pred_errors[type_of_icm] = forward_pred_err
-        inverse_pred_errors[type_of_icm] = inverse_pred_err
-        q_losses[type_of_icm] = q_loss
-        intrinsic_rewards[type_of_icm] = i_reward
-        if len(ICMs)>1:
-            if type_of_icm=="mine":
-                q_loss = 0
-        losses[type_of_icm] = loss_fn(q_loss, forward_pred_err, inverse_pred_err) #I
-    for type_of_loss, loss in losses.items():
-        loss.backward()
-        wandb.log({"DQN loss {}".format(type_of_loss): q_losses[type_of_loss].mean().item(),
-                   "Forward model loss {}".format(type_of_loss): forward_pred_errors[type_of_loss].flatten().mean().item(),
-                   "Inverse model loss {}".format(type_of_loss): inverse_pred_errors[type_of_loss].flatten().mean().item(),
-                   "Mean intrinsic reward of {}".format(type_of_loss): intrinsic_rewards[type_of_icm].flatten().mean().item()}, step=i)
+    forward_pred_err, inverse_pred_err, q_loss = minibatch_train(replay, ICM_model, Qmodel, qloss, use_extrinsic=True) #H
+    loss = loss_fn(q_loss, forward_pred_err, inverse_pred_err) #I
+    loss_list = (q_loss.mean(), forward_pred_err.flatten().mean(),\
+    inverse_pred_err.flatten().mean())
+    losses.append(loss_list)
+    loss.backward()
+    opt.step()
+
+wandb.init()
+encoder = EncoderModel()
+forward_model = ForwardModel()
+inverse_model = InverseModel()
+ICM_model = ICM()
+
+all_model_params = list(encoder.parameters()) #A
+all_model_params += list(forward_model.parameters()) + list(inverse_model.parameters())
+opt = optim.Adam(lr=0.001, params=all_model_params)
+
+iterations = 25_000
+
+for i in range(iterations):
+    state1_batch, action_batch, reward_batch, state2_batch = replay.get_batch() 
+    action_batch = action_batch.view(action_batch.shape[0],1) #A
+    reward_batch = reward_batch.view(reward_batch.shape[0],1)
+
+    forward_pred_err, inverse_pred_err = ICM_model(state1_batch, action_batch, state2_batch) #B
+    forward_pred_reward = forward_pred_err
+    wandb.log({"Forward model loss colab": forward_pred_err.flatten().mean().item(),
+               "Inverse model loss colab": inverse_pred_err.flatten().mean().item(),
+               "Mean intrinsic reward of colab": forward_pred_reward.flatten().mean().item()}, step=i)
+    total_loss = loss_fn(0, inverse_pred_err, forward_pred_err)
+    opt.zero_grad()
+    total_loss.backward()
     opt.step()
