@@ -28,8 +28,15 @@ from ICM.ICM_buffer import ICMBuffer
 from torch import optim
 import faulthandler
 import signal
+import random
+import numpy as np
 
-
+if ENV_CFG.SEED != -1:
+    torch.manual_seed(ENV_CFG.SEED)
+    random.seed(ENV_CFG.SEED)
+    np.random.seed(ENV_CFG.SEED)
+    torch.backends.cudnn.benchmark = False
+    #torch.use_deterministic_algorithms(mode = True)
 
 def atari_wrapper(env, clip_reward = True):
     """
@@ -53,12 +60,12 @@ if __name__=="__main__":
     parallel_envs = A2C_CFG.NUM_AGENTS # 20
     
     # Parallel environments
-    icm = ICM(ENV_CFG.ACTION_SPACE_SIZE, temporal_channels = ENV_CFG.TEMPORAL_CHANNELS,
-    hidden_layer_neurons=ICM_CFG.HIDDEN_LAYERS, eta = ICM_CFG.ETA, feature_map_qty=ICM_CFG.FMAP_QTY
+    icm = ICM(ENV_CFG.ACTION_SPACE_SIZE, inv_scale = 1, forward_scale = 1, temporal_channels = ENV_CFG.TEMPORAL_CHANNELS,
+    hidden_layer_neurons=ICM_CFG.HIDDEN_LAYERS, eta = ICM_CFG.ETA, feature_map_qty=ICM_CFG.FMAP_QTY,
     ).to(ENV_CFG.DEVICE).train()
 
     # ICM
-    icm_optimizer = optim.Adam(globals()["icm"].parameters(), lr=ICM_CFG.LR)
+    icm_optimizer = optim.Adam(icm.parameters(), lr=ICM_CFG.LR)
     icm_buffer = ICMBuffer(save_latest=ICM_CFG.SAVE_LATEST, buffer_size=ICM_CFG.BUFFER_SIZE, sample_size=ICM_CFG.BATCH_SIZE)
     
     # Eval and train environments
