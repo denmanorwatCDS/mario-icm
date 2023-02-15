@@ -47,8 +47,8 @@ def createICMByType(type_of_ICM):
         forward_model = ForwardModel()
         inverse_model = InverseModel()
         ICM_model = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
-        all_model_params += list(encoder.parameters()) + list(forward_model.parameters()) 
-        all_model_params += list(inverse_model.parameters())
+        all_model_params = list(encoder.parameters()) + list(forward_model.parameters()) 
+        all_model_params += list(inverse_model.parameters()) + list(Qmodel.parameters())
         opt = optim.Adam(lr=0.001, params=all_model_params)
     return ICM_model, opt
 
@@ -76,7 +76,7 @@ qloss = nn.MSELoss()
 ICM_model, opt = createICMByType(type_of_ICM)
 
 
-epochs = 25_000
+epochs = 50_000
 if fixate_buffer:
     epochs = replay.N
 
@@ -149,7 +149,7 @@ for i in range(epochs):
 
 if fixate_buffer:
     ICM_model, opt = createICMByType(type_of_ICM)
-    iterations = 25_000
+    iterations = 50_000
 
     for i in range(iterations):
         state1_batch, action_batch, reward_batch, state2_batch = replay.get_batch() 
