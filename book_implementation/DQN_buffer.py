@@ -6,12 +6,11 @@ import torch.nn.functional as F
 import numpy as np
 
 class ExperienceReplay:
-    def __init__(self, N=500, batch_size=100, override_memory=False):
+    def __init__(self, N=500, batch_size=100):
         self.N = N #A
         self.batch_size = batch_size #B
         self.memory = [] 
         self.counter = 0
-        self.override_memory = override_memory
         
     def add_memory(self, state1, action, reward, state2):
         self.counter +=1 
@@ -20,7 +19,7 @@ class ExperienceReplay:
             
         if len(self.memory) < self.N: #D
             self.memory.append( (state1, action, reward, state2) )
-        elif self.override_memory:
+        else:
             rand_index = np.random.randint(0,self.N-1)
             self.memory[rand_index] = (state1, action, reward, state2)
     

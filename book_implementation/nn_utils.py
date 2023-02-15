@@ -13,6 +13,7 @@ def loss_fn(q_loss, inverse_loss, forward_loss):
     loss = loss_ + params['lambda'] * q_loss
     return loss
 
+
 def getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss):
     
     def ICM(state1, action, state2, forward_scale=params["forward_scale"], inverse_scale=params["inverse_scale"]):
