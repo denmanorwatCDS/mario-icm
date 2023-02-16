@@ -8,6 +8,8 @@ import numpy as np
 from torch import nn
 from torch import optim
 import argparse
+import pickle
+import os
 
 SEED = 322
 torch.manual_seed(SEED)
@@ -57,16 +59,25 @@ parser.add_argument("fixate_buffer", help="Specify, do we need to fixate buffer.
 parser.add_argument("type_of_ICM", help="Specify, which implementation of ICM to use. Valid options: {mine, book}")
 args = parser.parse_args()
 type_of_ICM = args.type_of_ICM
-if args.fixate_buffer == "yes":
-    fixate_buffer = True
-elif args.fixate_buffer == "no":
-    fixate_buffer = False
-else:
-    fixate_buffer = None
 
 wandb.init()
 
 replay = ExperienceReplay(N=1000, batch_size=params['batch_size'])
+if args.fixate_buffer == "yes":
+    fixate_buffer = True
+    if os.path.exists("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED)):
+        with open('/home/dvasilev/mario_icm/DQN_buffer/{}'.format(SEED), 'rb') as handle:
+            replay = pickle.load(handle)
+            print("Buffer copied from file")
+    else:
+        print("Buffer created")
+
+elif args.fixate_buffer == "no":
+    fixate_buffer = False
+
+else:
+    fixate_buffer = None
+
 Qmodel = Qnetwork()
 
 forward_loss = nn.MSELoss(reduction='none')
@@ -78,7 +89,7 @@ ICM_model, opt = createICMByType(type_of_ICM)
 
 epochs = 50_000
 if fixate_buffer:
-    epochs = replay.N
+    epochs = replay.N - len(replay.memory)
 
 
 env.reset()
@@ -148,6 +159,13 @@ for i in range(epochs):
                    "Inverse model loss": inverse_pred_err.flatten().mean().item()}, step=i)
 
 if fixate_buffer:
+    print("Started fixated buffer experiment!")
+    if not os.path.exists("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED)):
+        with open("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED), 'wb') as handle:
+            pickle.dump(replay, handle)
+            print("Replay buffer dumped!")
+
+
     ICM_model, opt = createICMByType(type_of_ICM)
     iterations = 50_000
 

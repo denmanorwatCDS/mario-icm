@@ -68,16 +68,16 @@ if __name__=="__main__":
                        vec_env_cls=SubprocVecEnv, wrapper_class=atari_wrapper)
     env = VecFrameStack(env, n_stack = 4)
     
-    eval_env = make_vec_env("SuperMarioBros-v0", n_envs=1, seed=1001, 
-                            vec_env_cls=SubprocVecEnv, wrapper_class=atari_wrapper, 
-                            wrapper_kwargs={"clip_reward": False})
-    eval_env = VecFrameStack(eval_env, n_stack = 4)
+#    eval_env = make_vec_env("SuperMarioBros-v0", n_envs=1, seed=1001, 
+#                            vec_env_cls=SubprocVecEnv, wrapper_class=atari_wrapper, 
+#                            wrapper_kwargs={"clip_reward": False})
+#    eval_env = VecFrameStack(eval_env, n_stack = 4)
     
     callback = CustomCallback(parallel_envs=parallel_envs, action_space_size=env.action_space.n, 
                               HYPERPARAMS=HYPERPARAMS)
-    eval_callback =\
-        CustomEvalCallback(eval_env=eval_env, eval_freq=50000, parallel_envs=1, 
-                           action_space_size=eval_env.action_space.n)
+#    eval_callback =\
+#        CustomEvalCallback(eval_env=eval_env, eval_freq=50000, parallel_envs=1, 
+#                           action_space_size=eval_env.action_space.n)
 
     # A2C parameters
     policy_kwargs = {"features_extractor_class": ActorCritic, 
@@ -101,4 +101,4 @@ if __name__=="__main__":
     format = 'tensorboard'
     model.set_logger(A2CLogger(log_path, format, num_workers=parallel_envs))
 
-    model.learn(total_timesteps=float(1e8), callback=[callback, eval_callback])
+    model.learn(total_timesteps=float(1e8), callback=[callback])
