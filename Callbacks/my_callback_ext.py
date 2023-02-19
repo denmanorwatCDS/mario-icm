@@ -8,10 +8,10 @@ class CustomCallback(BaseCallback):
     :param verbose: Verbosity level: 0 for no output, 1 for info messages, 2 for debug messages
     """
 
-    def __init__(self, action_space_size, parallel_envs, HYPERPARAMS, quantity_of_logged_agents=3,
+    def __init__(self, action_space_size, parallel_envs, HYPERPARAMS, project_name, quantity_of_logged_agents=3,
                  verbose=0, detailed = True, framedrop=6):
         super(CustomCallback, self).__init__(verbose)
-        run = wandb.init(project = "Cartpole", config=HYPERPARAMS)
+        run = wandb.init(project = project_name, config=HYPERPARAMS)
         wandb.define_metric("Agent steps")
         self.episodic_rewards = [0]*min(parallel_envs, quantity_of_logged_agents)
         self.agent_steps = 0

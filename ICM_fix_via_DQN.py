@@ -205,6 +205,7 @@ if fixate_buffer:
             forward_pred_err, inverse_pred_err = ICM_model.get_losses(state1_batch, action_batch, state2_batch)
         else:
             forward_pred_err, inverse_pred_err = ICM_model(state1_batch, action_batch, state2_batch)
+            forward_pred_err = loss_fn(0, 0, forward_pred_err)/params["beta"]
         wandb.log({"Forward model loss": forward_pred_err.flatten().mean().item(),
                    "Inverse model loss": inverse_pred_err.flatten().mean().item()})
         opt.zero_grad()
