@@ -103,6 +103,7 @@ class ICM(nn.Module):
 
 
     def get_losses(self, observation, action, next_observation):
+        # QUESTION action detach?
         predicted_actions, predicted_states, next_states =\
             self(observation, action, next_observation)
         CE_loss = nn.CrossEntropyLoss()
@@ -129,3 +130,11 @@ class ICM(nn.Module):
             intrinsic_reward =\
                 self.eta*((predicted_state-real_state)**2).sum(dim=1).cpu().detach().numpy()
         return intrinsic_reward
+
+    def get_probability_distribution(self, observation, next_observation):
+        with torch.no_grad():
+            latent_obs, latent_next_obs = self.feature(observation), self.feature(next_observation)
+            action_logits = self.inverse_net(latent_obs, latent_next_obs)
+            # WARNING because we use softmax as layer of inverse net, we already have probabilities
+            probabilities = action_logits
+        return probabilities

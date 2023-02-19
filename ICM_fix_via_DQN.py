@@ -10,8 +10,9 @@ from torch import optim
 import argparse
 import pickle
 import os
+from book_implementation.CONFIG import params
 
-SEED = 322
+SEED = params["seed"]
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 random.seed(SEED)
@@ -39,7 +40,8 @@ from ICM.ICM import ICM
 def createICMByType(type_of_ICM):
     ICM_model, opt = None, None
     if type_of_ICM == "mine":
-        ICM_model = ICM(action_dim=12, temporal_channels=3, eta=1, inv_scale=params["inverse_scale"], forward_scale=params["forward_scale"])
+        ICM_model = ICM(action_dim=12, temporal_channels=3, eta=1, inv_scale=params["inverse_scale"], 
+                        forward_scale=params["forward_scale"])
         all_model_params = list(Qmodel.parameters()) + list(ICM_model.feature.parameters()) #A
         all_model_params += list(ICM_model.forward_net.parameters()) + list(ICM_model.inverse_net.parameters())
         opt = optim.Adam(lr=0.001, params=all_model_params)
@@ -58,16 +60,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("fixate_buffer", help="Specify, do we need to fixate buffer. Valid options: {yes, no}")
 parser.add_argument("type_of_ICM", help="Specify, which implementation of ICM to use. Valid options: {mine, book}")
 args = parser.parse_args()
-type_of_ICM = args.type_of_ICM
+assert args.fixate_buffer in ["yes", "no"], "Valid params for fixate buffer are yes or no"
+assert args.type_of_ICM in ["mine", "book"], "Valid params for type of ICN are mine or book"
 
-wandb.init()
+wandb.init(config=params)
 
-replay = ExperienceReplay(N=1000, batch_size=params['batch_size'])
+replay = ExperienceReplay(N=params["buffer_size"], batch_size=params['batch_size'], seed=SEED)
 if args.fixate_buffer == "yes":
     fixate_buffer = True
     if os.path.exists("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED)):
         with open('/home/dvasilev/mario_icm/DQN_buffer/{}'.format(SEED), 'rb') as handle:
-            replay = pickle.load(handle)
+            replay.memory = pickle.load(handle)
             print("Buffer copied from file")
     else:
         print("Buffer created")
@@ -77,6 +80,7 @@ elif args.fixate_buffer == "no":
 
 else:
     fixate_buffer = None
+type_of_ICM = args.type_of_ICM
 
 Qmodel = Qnetwork()
 
@@ -86,8 +90,7 @@ qloss = nn.MSELoss()
 
 ICM_model, opt = createICMByType(type_of_ICM)
 
-
-epochs = 50_000
+epochs = 25_000
 if fixate_buffer:
     epochs = replay.N - len(replay.memory)
 
@@ -162,30 +165,53 @@ if fixate_buffer:
     print("Started fixated buffer experiment!")
     if not os.path.exists("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED)):
         with open("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED), 'wb') as handle:
-            pickle.dump(replay, handle)
+            pickle.dump(replay.memory, handle)
             print("Replay buffer dumped!")
 
 
     ICM_model, opt = createICMByType(type_of_ICM)
-    iterations = 50_000
+    inverse_iterations = params["inverse_iterations"]
+    forward_iterations = params["forward_iterations"]
 
-    for i in range(iterations):
+    for i in range(inverse_iterations):
         state1_batch, action_batch, reward_batch, state2_batch = replay.get_batch() 
-        action_batch = action_batch.view(action_batch.shape[0],1) #A
-        reward_batch = reward_batch.view(reward_batch.shape[0],1)
+        action_batch = action_batch.view(action_batch.shape[0], 1) #A
 
         if isinstance(ICM_model, ICM):
             forward_pred_err, inverse_pred_err = ICM_model.get_losses(state1_batch, action_batch, state2_batch)
+            probabilities = ICM_model.get_probability_distribution(state1_batch, state2_batch)
+            action_array = action_batch.flatten()
+            mean_probability_of_right_action = probabilities[torch.arange(0, params["batch_size"]), action_array].mean().item()
+            print("{}/{}".format((action_array==probabilities.argmax(dim=1)).sum(), action_array.shape[0]))
+            accuracy = (action_array==probabilities.argmax(dim=1)).sum()/action_array.shape[0]
+            wandb.log({"Mean probability of right action": mean_probability_of_right_action,
+                       "Accuracy": accuracy}, step = i)
         else:
             forward_pred_err, inverse_pred_err = ICM_model(state1_batch, action_batch, state2_batch)
+
         forward_pred_reward = forward_pred_err
-        wandb.log({"Forward model loss colab": forward_pred_err.flatten().mean().item(),
-                   "Inverse model loss colab": inverse_pred_err.flatten().mean().item(),
-                   "Mean intrinsic reward of colab": forward_pred_reward.flatten().mean().item()}, step=i)
+        wandb.log({"Forward model loss": forward_pred_err.flatten().mean().item(),
+                   "Inverse model loss": inverse_pred_err.flatten().mean().item(),
+                   "Mean intrinsic reward": forward_pred_reward.flatten().mean().item()}, step=i)
         total_loss = loss_fn(0, inverse_pred_err, forward_pred_err)
         opt.zero_grad()
         total_loss.backward()
         opt.step()
+    
+    for i in range(forward_iterations):
+        state1_batch, action_batch, reward_batch, state2_batch = replay.get_batch()
+        action_batch = action_batch.view(action_batch.shape[0], 1)
+        if isinstance(ICM_model, ICM):
+            forward_pred_err, inverse_pred_err = ICM_model.get_losses(state1_batch, action_batch, state2_batch)
+        else:
+            forward_pred_err, inverse_pred_err = ICM_model(state1_batch, action_batch, state2_batch)
+        wandb.log({"Forward model loss": forward_pred_err.flatten().mean().item(),
+                   "Inverse model loss": inverse_pred_err.flatten().mean().item()})
+        opt.zero_grad()
+        forward_pred_err.backward()
+        opt.step()
+
+
 
 if not fixate_buffer:
     done = True

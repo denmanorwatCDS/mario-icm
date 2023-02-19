@@ -58,7 +58,7 @@ def atari_wrapper(env, clip_reward = True):
     return env
 
 if __name__=="__main__":
-    print(os.getpid()) # 2084532
+    print(os.getpid()) # 296431
     faulthandler.enable()
     faulthandler.register(signal.SIGUSR1.value)
     parallel_envs = A2C_CFG.NUM_AGENTS # 20

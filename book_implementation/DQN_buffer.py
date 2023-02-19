@@ -6,12 +6,13 @@ import torch.nn.functional as F
 import numpy as np
 
 class ExperienceReplay:
-    def __init__(self, N=500, batch_size=100):
+    def __init__(self, seed, N=500, batch_size=100):
         self.N = N #A
         self.batch_size = batch_size #B
-        self.memory = [] 
+        self.memory = []
         self.counter = 0
-        
+        self.random_generator = np.random.default_rng(seed)
+
     def add_memory(self, state1, action, reward, state2):
         self.counter +=1 
         if self.counter % 500 == 0: #C
@@ -24,7 +25,7 @@ class ExperienceReplay:
             self.memory[rand_index] = (state1, action, reward, state2)
     
     def shuffle_memory(self): #E
-        shuffle(self.memory)
+        self.random_generator.shuffle(self.memory) # shuffle(self.memory)
         
     def get_batch(self): #F
         if len(self.memory) < self.batch_size:
@@ -35,7 +36,9 @@ class ExperienceReplay:
             print("Error: No data in memory.")
             return None
         #G
-        ind = np.random.choice(np.arange(len(self.memory)),batch_size,replace=False)
+        ind = self.random_generator.choice(np.arange(len(self.memory)), batch_size,replace=False)
+        if self.counter%25==0:
+            print(ind)
         batch = [self.memory[i] for i in ind] #batch is a list of tuples
         state1_batch = torch.stack([x[0].squeeze(dim=0) for x in batch],dim=0)
         action_batch = torch.Tensor([x[1] for x in batch]).long()
