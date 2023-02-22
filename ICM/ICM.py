@@ -25,11 +25,12 @@ class Predictor(nn.Module):
 
 #TODO: add 256 to config
 class SimpleinverseNet(nn.Module):
-    def __init__(self, state_dim, action_classes, hidden_layer_neurons):
+    def __init__(self, state_dim, action_classes, hidden_layer_neurons, use_softmax = True):
         super(SimpleinverseNet, self).__init__()
         self.simple_classifier = torch.nn.Sequential(nn.Linear(2*state_dim, hidden_layer_neurons),
                                                      nn.ReLU(),
                                                      nn.Linear(hidden_layer_neurons, action_classes))
+        self.use_softmax = use_softmax
 
 
     def forward(self, previous_state, next_state):
@@ -37,7 +38,8 @@ class SimpleinverseNet(nn.Module):
 
         #WARNING: Authors of the book added softmax here
         processed_state = self.simple_classifier(cat_state)
-        processed_state = F.softmax(processed_state)
+        if self.use_softmax:
+            processed_state = F.softmax(processed_state)
         return processed_state
 
 
@@ -73,16 +75,17 @@ class SimplefeatureNet(nn.Module):
 
 class ICM(nn.Module):
     def __init__(self, action_dim, temporal_channels, inv_scale, forward_scale,
-                hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32,):
+                use_softmax = True, hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32,):
         super(ICM, self).__init__()
         self.eta = eta
         self.inv_scale = inv_scale
         self.forward_scale = forward_scale
+        self.use_softmax = use_softmax
         self.feature = SimplefeatureNet(temporal_channels, feature_map_qty).train()
 
         self.action_dim = action_dim
         self.state_dim = self.feature.state_dim
-        self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons).train()
+        self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons, use_softmax=use_softmax).train()
         self.forward_net = Predictor(self.action_dim, self.state_dim, hidden_layer_neurons).train()
 
 
@@ -103,7 +106,6 @@ class ICM(nn.Module):
 
 
     def get_losses(self, observation, action, next_observation):
-        # QUESTION action detach?
         predicted_actions, predicted_states, next_states =\
             self(observation, action, next_observation)
         CE_loss = nn.CrossEntropyLoss()
@@ -136,5 +138,8 @@ class ICM(nn.Module):
             latent_obs, latent_next_obs = self.feature(observation), self.feature(next_observation)
             action_logits = self.inverse_net(latent_obs, latent_next_obs)
             # WARNING because we use softmax as layer of inverse net, we already have probabilities
-            probabilities = action_logits
+            if self.use_softmax is False:
+                print("Logits: {}".format(action_logits))
+                probabilities = torch.softmax(action_logits, dim=1)
+                print("Probabilities: {}".format(probabilities))
         return probabilities

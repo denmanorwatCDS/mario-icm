@@ -36,31 +36,14 @@ import wandb
 
 from ICM.ICM import ICM
 
-def createICMByType(type_of_ICM):
-    ICM_model, opt = None, None
-    if type_of_ICM == "mine":
-        ICM_model = ICM(action_dim=12, temporal_channels=3, eta=1, inv_scale=params["inverse_scale"], 
-                        forward_scale=params["forward_scale"])
-        all_model_params = list(Qmodel.parameters()) + list(ICM_model.feature.parameters()) #A
-        all_model_params += list(ICM_model.forward_net.parameters()) + list(ICM_model.inverse_net.parameters())
-        opt = optim.Adam(lr=0.001, params=all_model_params)
-
-    if type_of_ICM == "book":
-        encoder = EncoderModel()
-        forward_model = ForwardModel()
-        inverse_model = InverseModel()
-        ICM_model = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
-        all_model_params = list(encoder.parameters()) + list(forward_model.parameters()) 
-        all_model_params += list(inverse_model.parameters()) + list(Qmodel.parameters())
-        opt = optim.Adam(lr=0.001, params=all_model_params)
-    return ICM_model, opt
-
 parser = argparse.ArgumentParser()
 parser.add_argument("fixate_buffer", help="Specify, do we need to fixate buffer. Valid options: {yes, no}")
 parser.add_argument("type_of_ICM", help="Specify, which implementation of ICM to use. Valid options: {mine, book}")
+parser.add_argument("use_softmax", help="Specify, do we need to use softmax in ICM. Valid options: {yes, no}")
 args = parser.parse_args()
 assert args.fixate_buffer in ["yes", "no"], "Valid params for fixate buffer are yes or no"
 assert args.type_of_ICM in ["mine", "book"], "Valid params for type of ICN are mine or book"
+assert args.use_softmax in ["yes", "no"], "Valid params for use softmax are yes or no"
 
 wandb.init(config=params)
 
@@ -77,9 +60,31 @@ if args.fixate_buffer == "yes":
 elif args.fixate_buffer == "no":
     fixate_buffer = False
 
+use_softmax = None
+if args.use_softmax == "yes":
+    use_softmax = True
 else:
-    fixate_buffer = None
+    use_softmax = False
 type_of_ICM = args.type_of_ICM
+
+def createICMByType(type_of_ICM):
+    ICM_model, opt = None, None
+    if type_of_ICM == "mine":
+        ICM_model = ICM(action_dim=12, temporal_channels=3, eta=1, inv_scale=params["inverse_scale"], 
+                        forward_scale=params["forward_scale"], use_softmax=use_softmax)
+        all_model_params = list(Qmodel.parameters()) + list(ICM_model.feature.parameters()) #A
+        all_model_params += list(ICM_model.forward_net.parameters()) + list(ICM_model.inverse_net.parameters())
+        opt = optim.Adam(lr=0.001, params=all_model_params)
+
+    if type_of_ICM == "book":
+        encoder = EncoderModel()
+        forward_model = ForwardModel()
+        inverse_model = InverseModel()
+        ICM_model = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
+        all_model_params = list(encoder.parameters()) + list(forward_model.parameters()) 
+        all_model_params += list(inverse_model.parameters()) + list(Qmodel.parameters())
+        opt = optim.Adam(lr=0.001, params=all_model_params)
+    return ICM_model, opt
 
 Qmodel = Qnetwork()
 
@@ -181,7 +186,6 @@ if fixate_buffer:
             probabilities = ICM_model.get_probability_distribution(state1_batch, state2_batch)
             action_array = action_batch.flatten()
             mean_probability_of_right_action = probabilities[torch.arange(0, params["batch_size"]), action_array].mean().item()
-            print("{}/{}".format((action_array==probabilities.argmax(dim=1)).sum(), action_array.shape[0]))
             accuracy = (action_array==probabilities.argmax(dim=1)).sum()/action_array.shape[0]
             wandb.log({"Mean probability of right action": mean_probability_of_right_action,
                        "Accuracy": accuracy}, step = i)

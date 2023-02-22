@@ -11,7 +11,7 @@ params = {
 'forward_scale': 1,
 'inverse_scale': 1e4,
 'forward_iterations': 25_000,
-'inverse_iterations': 100_000,
+'inverse_iterations': 25_000,
 'buffer_size': 1_000,
 'seed': 322
 }

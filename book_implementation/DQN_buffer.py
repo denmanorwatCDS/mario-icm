@@ -37,8 +37,6 @@ class ExperienceReplay:
             return None
         #G
         ind = self.random_generator.choice(np.arange(len(self.memory)), batch_size,replace=False)
-        if self.counter%25==0:
-            print(ind)
         batch = [self.memory[i] for i in ind] #batch is a list of tuples
         state1_batch = torch.stack([x[0].squeeze(dim=0) for x in batch],dim=0)
         action_batch = torch.Tensor([x[1] for x in batch]).long()
