@@ -1,0 +1,28 @@
+from config import a2c_config, environment_config, icm_config
+
+HYPERPARAMS = {
+"Seed": environment_config.SEED,
+"Action_space_size": environment_config.ACTION_SPACE_SIZE, 
+"Resized_size": environment_config.RESIZED_SIZE,
+"Temporal channels": environment_config.TEMPORAL_CHANNELS,
+"Action skip value": environment_config.ACTION_SKIP,
+"FPS of video": environment_config.FPS,
+"Learning rate of A2C": a2c_config.LR,
+"Number_of_steps": a2c_config.NUM_STEPS,
+"Number of parallel agents": a2c_config.NUM_AGENTS,
+"Gamma": a2c_config.GAMMA,
+"GAE_lambda": a2c_config.GAE_LAMBDA,
+"Entropy_coefficient": a2c_config.ENTROPY_COEF,
+"Value_loss_coeficient": a2c_config.VALUE_LOSS_COEF,
+"Maximum_grad_norm": a2c_config.MAX_GRAD_NORM,
+"Use rms prop": a2c_config.RMS_PROP,
+"Hidden neurons in policy": a2c_config.POLICY_NEURONS,
+"Hidden neurons in value function": a2c_config.VALUE_NEURONS,
+"ETA ICM - multiplier of reward": icm_config.ETA,
+"BETA ICM - weighted sum of forward model and backward model loss": icm_config.BETA,
+"Hidden neurons in linear layer of all models in ICM": icm_config.HIDDEN_LAYERS,
+"FMAP QTY in all convolutional layers": icm_config.FMAP_QTY,
+"Learn ICM only on latest batch. If true, buffer size and batch size are irrelevant": icm_config.SAVE_LATEST,
+"Buffer size of ICM buffer": icm_config.BUFFER_SIZE,
+"Batch size of ICM buffer": icm_config.BATCH_SIZE,
+"Learning rate of ICM": icm_config.LR}

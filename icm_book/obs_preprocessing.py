@@ -1,4 +1,4 @@
-from book_implementation.CONFIG import params
+from icm_book.CONFIG import params
 import torch
 from torch import nn
 from torch import optim

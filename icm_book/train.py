@@ -1,8 +1,8 @@
 import torch
 from torch.nn import functional as F
-from book_implementation.CONFIG import params
+from icm_book.CONFIG import params
 from torch import nn
-from ICM.ICM import ICM
+from icm_mine.icm import ICM
 
 
 def minibatch_train(replay, ICM_model, Qmodel, qloss, use_extrinsic=True):

@@ -1,2 +1,3 @@
-wandb/*
+wandb
 .conda/*
+DQN_buffer

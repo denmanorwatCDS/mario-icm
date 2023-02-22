@@ -139,7 +139,5 @@ class ICM(nn.Module):
             action_logits = self.inverse_net(latent_obs, latent_next_obs)
             # WARNING because we use softmax as layer of inverse net, we already have probabilities
             if self.use_softmax is False:
-                print("Logits: {}".format(action_logits))
                 probabilities = torch.softmax(action_logits, dim=1)
-                print("Probabilities: {}".format(probabilities))
         return probabilities

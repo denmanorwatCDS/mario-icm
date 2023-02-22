@@ -9,7 +9,7 @@ from torch import optim
 import argparse
 import pickle
 import os
-from book_implementation.CONFIG import params
+from icm_book.CONFIG import params
 
 SEED = params["seed"]
 torch.manual_seed(SEED)
@@ -24,17 +24,17 @@ torch.use_deterministic_algorithms(True)
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 env = JoypadSpace(env, COMPLEX_MOVEMENT) #C
 
-from book_implementation.DQN_buffer import ExperienceReplay
-from book_implementation.DQN import Qnetwork
-from book_implementation.ICM_blocks import EncoderModel, ForwardModel, InverseModel
-from book_implementation.CONFIG import params
-from book_implementation.obs_preprocessing import prepare_initial_state, reset_env, prepare_state, prepare_multi_state
-from book_implementation.nn_utils import loss_fn, policy, getICM
-from book_implementation.train import minibatch_train
+from icm_book.dqn_buffer import ExperienceReplay
+from icm_book.dqn import Qnetwork
+from icm_book.icm_blocks import EncoderModel, ForwardModel, InverseModel
+from icm_book.CONFIG import params
+from icm_book.obs_preprocessing import prepare_initial_state, reset_env, prepare_state, prepare_multi_state
+from icm_book.nn_utils import loss_fn, policy, getICM
+from icm_book.train import minibatch_train
 from collections import deque
 import wandb
 
-from ICM.ICM import ICM
+from icm_mine.icm import ICM
 
 parser = argparse.ArgumentParser()
 parser.add_argument("fixate_buffer", help="Specify, do we need to fixate buffer. Valid options: {yes, no}")
