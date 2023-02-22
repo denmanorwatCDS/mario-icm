@@ -1,8 +1,8 @@
 import torch.nn.functional as F
 import torch
 from torch import nn
-from Config.ENV_CFG import DEVICE
-from torch import nn
+
+DEVICE = torch.device("cpu")
 
 
 class Predictor(nn.Module):

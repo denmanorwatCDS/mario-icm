@@ -3,11 +3,9 @@ import numpy as np
 import wandb
 
 from stable_baselines3.a2c.a2c import A2C
-from Callbacks.my_callback_ext import CustomCallback
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import set_random_seed
-from Logger.my_logger import A2CLogger
 
 def make_env(env_id, rank, seed=0):
     """

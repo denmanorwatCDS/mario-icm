@@ -10,8 +10,8 @@ params = {
 'frames_per_state':3,
 'forward_scale': 1,
 'inverse_scale': 1e4,
-'forward_iterations': 5_000,
-'inverse_iterations': 5_000,
+'forward_iterations': 25_000,
+'inverse_iterations': 100_000,
 'buffer_size': 1_000,
-'seed': 404
+'seed': 322
 }

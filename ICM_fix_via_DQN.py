@@ -1,7 +1,6 @@
-import gym
 from nes_py.wrappers import JoypadSpace #A
 import gym_super_mario_bros
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT, COMPLEX_MOVEMENT #B
+from gym_super_mario_bros.actions import COMPLEX_MOVEMENT #B
 import torch
 import random
 import numpy as np
@@ -193,9 +192,9 @@ if fixate_buffer:
         wandb.log({"Forward model loss": forward_pred_err.flatten().mean().item(),
                    "Inverse model loss": inverse_pred_err.flatten().mean().item(),
                    "Mean intrinsic reward": forward_pred_reward.flatten().mean().item()}, step=i)
-        total_loss = loss_fn(0, inverse_pred_err, forward_pred_err)
+        inverse_pred_err = loss_fn(0, inverse_pred_err, 0)/params["beta"]
         opt.zero_grad()
-        total_loss.backward()
+        inverse_pred_err.backward()
         opt.step()
     
     for i in range(forward_iterations):
@@ -211,7 +210,6 @@ if fixate_buffer:
         opt.zero_grad()
         forward_pred_err.backward()
         opt.step()
-
 
 
 if not fixate_buffer:
