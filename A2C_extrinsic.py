@@ -12,6 +12,7 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
 from config import environment_config, a2c_config
+from agents.neural_network_ext import ActorCritic
 
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
@@ -41,9 +42,11 @@ if __name__=="__main__":
                        vec_env_cls=SubprocVecEnv, wrapper_class=atari_wrapper)
     env = VecFrameStack(env, n_stack = 4)
     
-    
+    policy_kwargs = {"features_extractor_class": ActorCritic, 
+                     "net_arch": [dict(pi=[a2c_config.POLICY_NEURONS], vf=[a2c_config.VALUE_NEURONS])]}
+
     model = A2C("CnnPolicy", env,
-                verbose=1, learning_rate=a2c_config.LR, use_rms_prop=a2c_config.RMS_PROP, 
+                verbose=1, learning_rate=a2c_config.LR, use_rms_prop=a2c_config.RMS_PROP, policy_kwargs=policy_kwargs,
                 n_steps=a2c_config.NUM_STEPS, seed=environment_config.SEED, 
                 max_grad_norm=a2c_config.MAX_GRAD_NORM, gamma=a2c_config.GAMMA, vf_coef=a2c_config.VALUE_LOSS_COEF,
                 ent_coef=a2c_config.ENTROPY_COEF, gae_lambda=a2c_config.GAE_LAMBDA)
