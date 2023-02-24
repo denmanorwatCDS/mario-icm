@@ -39,7 +39,7 @@ if __name__=="__main__":
     
     # Eval and train environments
     env = make_vec_env("SuperMarioBros-v0", n_envs=parallel_envs, seed=0, 
-                       vec_env_cls=SubprocVecEnv, wrapper_class=atari_wrapper)
+                       vec_env_cls=SubprocVecEnv, vec_env_kwargs={"start_method": "forkserver"}, wrapper_class=atari_wrapper)
     env = VecFrameStack(env, n_stack = 4)
     
     policy_kwargs = {"features_extractor_class": ActorCritic, 
