@@ -5,7 +5,7 @@ LR = 1e-04
 NUM_STEPS = 20 # 20
 
 # Number of agents in A2C
-NUM_AGENTS = 20
+NUM_AGENTS = 16
 
 # Discount factor
 GAMMA = 0.99

@@ -1,5 +1,6 @@
 import torch
 import random
+import gym
 import numpy as np
 from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
 from stable_baselines3.common.atari_wrappers import WarpFrame
@@ -7,42 +8,39 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.a2c.a2c import A2C
+from stable_baselines3.common.utils import set_random_seed
 
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
 from config import environment_config, a2c_config
-from agents.neural_network_ext import ActorCritic
+from agents.copied_feature_extractor import CustomCNN, NatureCNN
 
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
     random.seed(environment_config.SEED)
     np.random.seed(environment_config.SEED)
-    #torch.backends.cudnn.benchmark = False
-    #torch.use_deterministic_algorithms(mode = True)
 
-def atari_wrapper(env, clip_reward = True):
-    """
-    Utility function for multiprocessed env.
-    :param env_id: (str) the environment ID
-    :param num_env: (int) the number of environments you wish to have in subprocesses
-    :param seed: (int) the inital seed for RNG
-    :param rank: (int) index of the subprocess
-    """
-    env = JoypadSpace(env, environment_config.ALL_ACTION_SPACE)
-    env = WarpFrame(env, width=42, height=42)
-    env = MaxAndSkipEnv(env, skip=environment_config.ACTION_SKIP)
-    return env
+def make_env(env_id, rank, seed=0):
+    def _init():
+        env = gym.make(env_id)
+        env.seed(seed + rank)
+        #env = JoypadSpace(env, environment_config.ALL_ACTION_SPACE)
+        env = WarpFrame(env, width=42, height=42)
+        env = MaxAndSkipEnv(env, skip=environment_config.ACTION_SKIP)
+        return env
+    set_random_seed(seed)
+    return _init
+
 
 if __name__=="__main__":
     parallel_envs = a2c_config.NUM_AGENTS # 20
-    
+    env_id = "SpaceInvaders-v4"
     # Eval and train environments
-    env = make_vec_env("SuperMarioBros-v0", n_envs=parallel_envs, seed=0, 
-                       vec_env_cls=SubprocVecEnv, vec_env_kwargs={"start_method": "forkserver"}, wrapper_class=atari_wrapper)
+    env = SubprocVecEnv([make_env(env_id, i) for i in range(parallel_envs)], start_method="forkserver")
     env = VecFrameStack(env, n_stack = 4)
     
-    policy_kwargs = {"features_extractor_class": ActorCritic, 
+    policy_kwargs = {"features_extractor_class": CustomCNN, 
                      "net_arch": [dict(pi=[a2c_config.POLICY_NEURONS], vf=[a2c_config.VALUE_NEURONS])]}
 
     model = A2C("CnnPolicy", env,
@@ -50,8 +48,5 @@ if __name__=="__main__":
                 n_steps=a2c_config.NUM_STEPS, seed=environment_config.SEED, 
                 max_grad_norm=a2c_config.MAX_GRAD_NORM, gamma=a2c_config.GAMMA, vf_coef=a2c_config.VALUE_LOSS_COEF,
                 ent_coef=a2c_config.ENTROPY_COEF, gae_lambda=a2c_config.GAE_LAMBDA)
-
-    log_path = 'sb3_logs'
-    format = 'tensorboard'
 
     model.learn(total_timesteps=float(1e8))
