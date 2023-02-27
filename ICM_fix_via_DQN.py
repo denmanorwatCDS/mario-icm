@@ -1,5 +1,6 @@
 from nes_py.wrappers import JoypadSpace #A
 import gym_super_mario_bros
+import gym
 from gym_super_mario_bros.actions import COMPLEX_MOVEMENT #B
 import torch
 import random
@@ -21,8 +22,9 @@ torch.backends.cudnn.enabled = False
 torch.backends.cudnn.deterministic = True
 torch.use_deterministic_algorithms(True)
 
-env = gym_super_mario_bros.make('SuperMarioBros-v0')
-env = JoypadSpace(env, COMPLEX_MOVEMENT) #C
+#env = gym_super_mario_bros.make('SuperMarioBros-v0')
+#env = JoypadSpace(env, COMPLEX_MOVEMENT) #C
+env = gym.make("BankHeist-v4")
 
 from icm_book.dqn_buffer import ExperienceReplay
 from icm_book.dqn import Qnetwork
@@ -109,7 +111,7 @@ episode_length = 0
 switch_to_eps_greedy = 1000
 state_deque = deque(maxlen=params['frames_per_state'])
 e_reward = 0.
-last_x_pos = env.env.env._x_position #A
+#last_x_pos = env.env.env._x_position #A
 ep_lengths = []
 use_extrinsic = False
 current_video = []
@@ -125,7 +127,7 @@ for i in range(epochs):
         action = int(policy(q_val_pred))
     for j in range(params['action_repeats']): #D
         state2, e_reward_, done, info = env.step(action)
-        last_x_pos = info['x_pos']
+        #last_x_pos = info['x_pos']
         if done:
             state1 = reset_env(env)
             break
@@ -136,19 +138,19 @@ for i in range(epochs):
         current_video.append(state2[0, -1:, :, :])
     replay.add_memory(state1, action, e_reward, state2) #F
     e_reward = 0
-    if episode_length > params['max_episode_len']: #G
-        if (info['x_pos'] - last_x_pos) < params['min_progress']:
-            done = True
-        else:
-            last_x_pos = info['x_pos']
+    #if episode_length > params['max_episode_len']: #G
+        #if (info['x_pos'] - last_x_pos) < params['min_progress']:
+        #    done = True
+        #else:
+        #    last_x_pos = info['x_pos']
     if done:
-        ep_lengths.append(info['x_pos'])
+        #ep_lengths.append(info['x_pos'])
         state1 = reset_env(env)
         #last_x_pos = env.env.env._x_position
         episode_length = 0
         if not fixate_buffer:
             current_video = (np.stack(current_video, axis = 0)*255).astype(np.uint8)
-            wandb.log({"Maximal x pos": info['x_pos']}, step=i)
+            #wandb.log({"Maximal x pos": info['x_pos']}, step=i)
             wandb.log({"Agent train": wandb.Video(current_video, fps=30, format="gif")}, step=i)
             current_video = []
     else:
