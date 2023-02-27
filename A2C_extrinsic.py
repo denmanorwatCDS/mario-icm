@@ -25,7 +25,7 @@ def make_env(env_id, rank, seed=0):
     def _init():
         env = gym.make(env_id)
         env.seed(seed + rank)
-        #env = JoypadSpace(env, environment_config.ALL_ACTION_SPACE)
+        env = JoypadSpace(env, environment_config.ALL_ACTION_SPACE)
         env = WarpFrame(env, width=42, height=42)
         env = MaxAndSkipEnv(env, skip=environment_config.ACTION_SKIP)
         return env
@@ -35,7 +35,7 @@ def make_env(env_id, rank, seed=0):
 
 if __name__=="__main__":
     parallel_envs = a2c_config.NUM_AGENTS # 20
-    env_id = "SpaceInvaders-v4"
+    env_id = "SuperMarioBros-1-1-v0" # SuperMarioBros
     # Eval and train environments
     env = SubprocVecEnv([make_env(env_id, i) for i in range(parallel_envs)], start_method="forkserver")
     env = VecFrameStack(env, n_stack = 4)

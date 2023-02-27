@@ -137,7 +137,9 @@ class ICM(nn.Module):
         with torch.no_grad():
             latent_obs, latent_next_obs = self.feature(observation), self.feature(next_observation)
             action_logits = self.inverse_net(latent_obs, latent_next_obs)
+            if self.use_softmax is True:
+                probabilities = action_logits
             # WARNING because we use softmax as layer of inverse net, we already have probabilities
-            if self.use_softmax is False:
+            else:
                 probabilities = torch.softmax(action_logits, dim=1)
-        return probabilities
+            return probabilities

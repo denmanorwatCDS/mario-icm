@@ -50,8 +50,8 @@ wandb.init(config=params)
 replay = ExperienceReplay(N=params["buffer_size"], batch_size=params['batch_size'], seed=SEED)
 if args.fixate_buffer == "yes":
     fixate_buffer = True
-    if os.path.exists("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED)):
-        with open('/home/dvasilev/mario_icm/DQN_buffer/{}'.format(SEED), 'rb') as handle:
+    if os.path.exists("/home/dvasilev/mario_icm/dqn_buffer/{}".format(SEED)):
+        with open('/home/dvasilev/mario_icm/dqn_buffer/{}'.format(SEED), 'rb') as handle:
             replay.memory = pickle.load(handle)
             print("Buffer copied from file")
     else:
@@ -65,6 +65,7 @@ if args.use_softmax == "yes":
     use_softmax = True
 else:
     use_softmax = False
+print(use_softmax)
 type_of_ICM = args.type_of_ICM
 
 def createICMByType(type_of_ICM):
@@ -80,6 +81,7 @@ def createICMByType(type_of_ICM):
         encoder = EncoderModel()
         forward_model = ForwardModel()
         inverse_model = InverseModel()
+        # WARNING 1: inverse_loss and forward_loss
         ICM_model = getICM(encoder, forward_model, inverse_model, inverse_loss, forward_loss)
         all_model_params = list(encoder.parameters()) + list(forward_model.parameters()) 
         all_model_params += list(inverse_model.parameters()) + list(Qmodel.parameters())
@@ -166,9 +168,14 @@ for i in range(epochs):
                    "Inverse model loss": inverse_pred_err.flatten().mean().item()}, step=i)
 
 if fixate_buffer:
+    average_forward = []
+    average_backward = []
+    accuracy_mean = []
+    probability_mean = []
+
     print("Started fixated buffer experiment!")
-    if not os.path.exists("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED)):
-        with open("/home/dvasilev/mario_icm/DQN_buffer/{}".format(SEED), 'wb') as handle:
+    if not os.path.exists("/home/dvasilev/mario_icm/dqn_buffer/{}".format(SEED)):
+        with open("/home/dvasilev/mario_icm/dqn_buffer/{}".format(SEED), 'wb') as handle:
             pickle.dump(replay.memory, handle)
             print("Replay buffer dumped!")
 
@@ -196,11 +203,29 @@ if fixate_buffer:
         wandb.log({"Forward model loss": forward_pred_err.flatten().mean().item(),
                    "Inverse model loss": inverse_pred_err.flatten().mean().item(),
                    "Mean intrinsic reward": forward_pred_reward.flatten().mean().item()}, step=i)
-        inverse_pred_err = loss_fn(0, inverse_pred_err, 0)/params["beta"]
+        average_forward.append(forward_pred_err.flatten().mean().item())
+        average_backward.append(inverse_pred_err.flatten().mean().item())
+        accuracy_mean.append(accuracy)
+        probability_mean.append(mean_probability_of_right_action)
+        if i%50==0 and i!=0:
+            average_forward = np.array(average_forward)
+            average_backward = np.array(average_backward)
+            accuracy_mean = np.array(accuracy_mean)
+            probability_mean = np.array(probability_mean)
+            wandb.log({"Mean/Forward model": np.mean(average_forward),
+                       "Mean/Backward model": np.mean(average_backward),
+                       "Mean/accuracy": np.mean(accuracy_mean),
+                       "Mean/probability": np.mean(probability_mean)}, step=i)
+            average_forward = []
+            average_backward = []
+            accuracy_mean = []
+            probability_mean = []
         opt.zero_grad()
         inverse_pred_err.backward()
         opt.step()
     
+    average_forward = []
+    average_backward = []
     for i in range(forward_iterations):
         state1_batch, action_batch, reward_batch, state2_batch = replay.get_batch()
         action_batch = action_batch.view(action_batch.shape[0], 1)
@@ -208,9 +233,17 @@ if fixate_buffer:
             forward_pred_err, inverse_pred_err = ICM_model.get_losses(state1_batch, action_batch, state2_batch)
         else:
             forward_pred_err, inverse_pred_err = ICM_model(state1_batch, action_batch, state2_batch)
-            forward_pred_err = loss_fn(0, 0, forward_pred_err)/params["beta"]
         wandb.log({"Forward model loss": forward_pred_err.flatten().mean().item(),
                    "Inverse model loss": inverse_pred_err.flatten().mean().item()})
+        average_forward.append(forward_pred_err.flatten().mean().item())
+        average_backward.append(inverse_pred_err.flatten().mean().item())
+        if i%50==0 and i!=0:
+            average_forward = np.array(average_forward)
+            average_backward = np.array(average_backward)
+            wandb.log({"Mean/Forward model": np.mean(average_forward),
+                       "Mean/Backward model": np.mean(average_backward)}, step=i+inverse_iterations)
+            average_forward = []
+            average_backward = []
         opt.zero_grad()
         forward_pred_err.backward()
         opt.step()
