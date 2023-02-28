@@ -9,11 +9,18 @@ from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.a2c.a2c import A2C
 from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
+from loggers.logger_callback import LoggerCallback
+from loggers.eval_callback import LoggerEvalCallback
+from loggers.a2c_logger import A2CLogger
+from loggers.global_counter import GlobalCounter
+
 
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
 from config import environment_config, a2c_config
+from agents.neural_network_ext import ActorCritic
 from agents.copied_feature_extractor import CustomCNN, NatureCNN
 
 if environment_config.SEED != -1:
@@ -36,17 +43,22 @@ def make_env(env_id, rank, seed=0):
 if __name__=="__main__":
     parallel_envs = a2c_config.NUM_AGENTS # 20
     env_id = "SuperMarioBros-1-1-v0" # SuperMarioBros
+    global_counter = GlobalCounter()
+
     # Eval and train environments
     env = SubprocVecEnv([make_env(env_id, i) for i in range(parallel_envs)], start_method="forkserver")
     env = VecFrameStack(env, n_stack = 4)
+
+    eval_env = SubprocVecEnv([make_env(env_id, 256)])
+    eval_env = VecFrameStack(eval_env, n_stack = 4)
     
-    policy_kwargs = {"features_extractor_class": CustomCNN, 
-                     "net_arch": [dict(pi=[a2c_config.POLICY_NEURONS], vf=[a2c_config.VALUE_NEURONS])]}
+    policy_kwargs = dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5))
 
     model = A2C("CnnPolicy", env,
-                verbose=1, learning_rate=a2c_config.LR, use_rms_prop=a2c_config.RMS_PROP, policy_kwargs=policy_kwargs,
-                n_steps=a2c_config.NUM_STEPS, seed=environment_config.SEED, 
-                max_grad_norm=a2c_config.MAX_GRAD_NORM, gamma=a2c_config.GAMMA, vf_coef=a2c_config.VALUE_LOSS_COEF,
-                ent_coef=a2c_config.ENTROPY_COEF, gae_lambda=a2c_config.GAE_LAMBDA)
+                verbose=1, policy_kwargs=policy_kwargs,
+                seed=environment_config.SEED, vf_coef=0.25, ent_coef=0.01)
 
-    model.learn(total_timesteps=float(1e8))
+    model.set_logger(A2CLogger(None, "stdout", global_counter = global_counter))
+    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(0, "Extrinsic A2C", None, global_counter = global_counter), 
+                                                      LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
+                                                                         global_counter=global_counter)])
