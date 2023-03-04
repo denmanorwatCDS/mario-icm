@@ -21,3 +21,9 @@ BATCH_SIZE = 128
 
 # ICM learning rate
 LR = 1e-03
+
+# ICM inverse loss scale
+INVERSE_SCALE=1
+
+# ICM forward loss scale
+FORWARD_SCALE=1

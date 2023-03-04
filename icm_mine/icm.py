@@ -65,7 +65,6 @@ class SimplefeatureNet(nn.Module):
         self.state_dim = 32*3*3
 
 
-
     def forward(self, x):
         # WARNING Normalize
         x = F.normalize(x)
@@ -75,9 +74,10 @@ class SimplefeatureNet(nn.Module):
 
 class ICM(nn.Module):
     def __init__(self, action_dim, temporal_channels, inv_scale, forward_scale,
-                use_softmax = True, hidden_layer_neurons=256,  eta=1/2, feature_map_qty=32,):
+                use_softmax = True, hidden_layer_neurons=256, beta=1/2, eta=1/2, feature_map_qty=32,):
         super(ICM, self).__init__()
         self.eta = eta
+        self.beta = beta
         self.inv_scale = inv_scale
         self.forward_scale = forward_scale
         self.use_softmax = use_softmax
@@ -115,10 +115,14 @@ class ICM(nn.Module):
             self.inv_scale*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         # WARNING: Pathak had 1/2, authors of the book hand't!
         forward_pred_err =\
-            self.forward_scale*((next_states-predicted_states)**2).sum(dim = 1).mean()
+            1/2*self.forward_scale*((next_states-predicted_states)**2).sum(dim = 1).mean()
         return forward_pred_err, inverse_pred_err
-        
+    
 
+    def get_icm_loss(self, observation, action, next_observation):
+        forward_loss, inverse_loss = self.get_losses(observation, action, next_observation)
+        return forward_loss*self.beta + (1-self.beta)*inverse_loss
+        
 
     def intrinsic_reward(self, observation, action, next_observation):
         intrinsic_reward = 0
@@ -132,6 +136,7 @@ class ICM(nn.Module):
             intrinsic_reward =\
                 self.eta*((predicted_state-real_state)**2).sum(dim=1).cpu().detach().numpy()
         return intrinsic_reward
+
 
     def get_probability_distribution(self, observation, next_observation):
         with torch.no_grad():
