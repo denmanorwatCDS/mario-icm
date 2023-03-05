@@ -39,7 +39,7 @@ def evaluate_policy(
             observation, reward, done, info = env.step(action)
             current_reward += reward
             current_length += 1
-            episode_x_pos[i] = max(episode_x_pos[i], info["x_pos"])
+            episode_x_pos[i] = max(episode_x_pos[i], info[0]["x_pos"])
             if (i+1) % n_eval_episodes == 0:
                 sampled_observations.append(np.transpose(observation, axes=(0, 3, 1, 2)).squeeze()[-1:])
         if done[0]:

@@ -21,7 +21,6 @@ import gym_super_mario_bros
 
 from config import environment_config, a2c_config, log_config, icm_config
 from agents.neural_network_ext import ActorCritic
-from agents.copied_feature_extractor import CustomCNN, NatureCNN
 
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
@@ -55,9 +54,10 @@ if __name__=="__main__":
     eval_env = SubprocVecEnv([make_env(env_id, 256)])
     eval_env = VecFrameStack(eval_env, n_stack = 4)
     
-    policy_kwargs = dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5))
+    policy_kwargs = dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5), 
+                         features_extractor_class=ActorCritic)
 
-    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, intrinsic_reward_coef=0,
+    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, intrinsic_reward_coef=1.,
                 verbose=1, policy_kwargs=policy_kwargs,
                 seed=environment_config.SEED, vf_coef=0.25, ent_coef=0.01)
 
