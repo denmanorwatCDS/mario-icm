@@ -24,3 +24,13 @@ ACTION_SKIP = 6
 
 # FPS of submitted video
 FPS = 30
+
+config_dict = {
+    "SEED": SEED,
+    "ACTION_SPACE_SIZE": ACTION_SPACE_SIZE,
+    "RESIZED SIZE - resized image size": RESIZED_SIZE,
+    "TEMPORAL CHANNELS - quantity of sequential frames, placed in channel places": TEMPORAL_CHANNELS,
+    "ACTION_SKIP - how much action repeat in environment": ACTION_SKIP,
+    "FPS - fps of submitted video": FPS
+
+}

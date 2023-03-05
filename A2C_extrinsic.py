@@ -19,7 +19,7 @@ from icm_mine.icm import ICM
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
-from config import environment_config, a2c_config, log_config, icm_config
+from config import environment_config, a2c_config, log_config, icm_config, hyperparameters
 from agents.neural_network_ext import ActorCritic
 
 if environment_config.SEED != -1:
@@ -45,7 +45,8 @@ if __name__=="__main__":
     global_counter = GlobalCounter()
     icm = ICM(environment_config.ACTION_SPACE_SIZE, environment_config.TEMPORAL_CHANNELS, 
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, hidden_layer_neurons=icm_config.HIDDEN_LAYERS,
-              beta=icm_config.BETA, eta=icm_config.ETA, feature_map_qty=icm_config.FMAP_QTY).to("cuda:0" if torch.cuda.is_available() else "cpu")
+              beta=icm_config.BETA, eta=icm_config.ETA, feature_map_qty=icm_config.FMAP_QTY)\
+                .to("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Eval and train environments
     env = SubprocVecEnv([make_env(env_id, i) for i in range(parallel_envs)], start_method="forkserver")
@@ -54,15 +55,17 @@ if __name__=="__main__":
     eval_env = SubprocVecEnv([make_env(env_id, 256)])
     eval_env = VecFrameStack(eval_env, n_stack = 4)
     
-    policy_kwargs = dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5), 
-                         features_extractor_class=ActorCritic)
+    policy_kwargs = dict(features_extractor_class=ActorCritic)
 
-    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, intrinsic_reward_coef=1.,
-                verbose=1, policy_kwargs=policy_kwargs,
-                seed=environment_config.SEED, vf_coef=0.25, ent_coef=0.01)
+    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, 
+                          intrinsic_reward_coef=1., learning_rate=a2c_config.LR*a2c_config.LR_FACTOR, n_steps=a2c_config.NUM_STEPS, 
+                          gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
+                          ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF,
+                          max_grad_norm=a2c_config.MAX_GRAD_NORM, use_rms_prop=a2c_config.RMS_PROP, 
+                          verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
 
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
     model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Extrinsic A2C", 
-                                                                     None, global_counter = global_counter), 
+                                                                     hyperparameters.HYPERPARAMS, global_counter = global_counter), 
                                                       LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
                                                                          global_counter=global_counter)])
