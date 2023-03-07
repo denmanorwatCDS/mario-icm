@@ -19,7 +19,8 @@ from icm_mine.icm import ICM
 from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
-from config import environment_config, a2c_config, log_config, icm_config, hyperparameters
+from config import log_config
+from config.stable_baselines3 import environment_config, a2c_config, icm_config, hyperparameters
 from agents.neural_network_ext import ActorCritic
 
 if environment_config.SEED != -1:
@@ -38,7 +39,6 @@ def make_env(env_id, rank, seed=0):
     set_random_seed(seed)
     return _init
 
-
 if __name__=="__main__":
     parallel_envs = a2c_config.NUM_AGENTS # 20
     env_id = "SuperMarioBros-1-1-v0" # SuperMarioBros
@@ -50,19 +50,20 @@ if __name__=="__main__":
 
     # Eval and train environments
     env = SubprocVecEnv([make_env(env_id, i) for i in range(parallel_envs)], start_method="forkserver")
-    env = VecFrameStack(env, n_stack = 4)
+    env = VecFrameStack(env, n_stack = environment_config.TEMPORAL_CHANNELS)
 
     eval_env = SubprocVecEnv([make_env(env_id, 256)])
-    eval_env = VecFrameStack(eval_env, n_stack = 4)
+    eval_env = VecFrameStack(eval_env, n_stack = environment_config.TEMPORAL_CHANNELS)
     
-    policy_kwargs = dict(features_extractor_class=ActorCritic)
+    policy_kwargs = a2c_config.POLICY_KWARGS
 
     model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, 
-                          intrinsic_reward_coef=1., learning_rate=a2c_config.LR*a2c_config.LR_FACTOR, n_steps=a2c_config.NUM_STEPS, 
-                          gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
-                          ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF,
-                          max_grad_norm=a2c_config.MAX_GRAD_NORM, use_rms_prop=a2c_config.RMS_PROP, 
-                          verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
+                          motivation_grad_norm=icm_config.GRAD_NORM, global_counter=global_counter, warmup_steps=icm_config.WARMUP, 
+                          intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF, learning_rate=a2c_config.LR*a2c_config.LR_FACTOR, 
+                          n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
+                          ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF, max_grad_norm=a2c_config.MAX_GRAD_NORM, 
+                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
+
 
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
     model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Extrinsic A2C", 

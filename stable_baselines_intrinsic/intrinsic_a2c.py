@@ -1,4 +1,5 @@
 from stable_baselines3.a2c.a2c import A2C
+from torch.nn.utils import clip_grad_norm_
 import numpy as np
 import torch as th
 from gym import spaces
@@ -6,11 +7,11 @@ from gym import spaces
 from stable_baselines3.common.utils import obs_as_tensor
 
 class intrinsic_A2C(A2C):
-    def __init__(self, policy, env, motivation_model, motivation_lr, intrinsic_reward_coef, learning_rate = 7e-4, n_steps = 5, 
-                 gamma = 0.99, gae_lambda = 1.0, ent_coef = 0.0, vf_coef = 0.5, max_grad_norm = 0.5, rms_prop_eps = 1e-5, 
-                 use_rms_prop = True, use_sde = False, sde_sample_freq = -1, normalize_advantage = False, 
-                 tensorboard_log = None, create_eval_env = False, policy_kwargs = None, verbose = 0, seed = None,
-                 device = "auto", _init_setup_model = True):
+    def __init__(self, policy, env, motivation_model, motivation_lr, motivation_grad_norm, intrinsic_reward_coef, warmup_steps, 
+                 global_counter, learning_rate = 7e-4, n_steps = 5, gamma = 0.99, gae_lambda = 1.0, ent_coef = 0.0, vf_coef = 0.5,
+                 max_grad_norm = 0.5, rms_prop_eps = 1e-5, use_rms_prop = True, use_sde = False, sde_sample_freq = -1, 
+                 normalize_advantage = False, tensorboard_log = None, create_eval_env = False, policy_kwargs = None, verbose = 0, 
+                 seed = None, device = "auto", _init_setup_model = True):
         super().__init__(policy, env, learning_rate, n_steps, gamma, gae_lambda, 
                        ent_coef, vf_coef, max_grad_norm, rms_prop_eps, use_rms_prop, use_sde, 
                        sde_sample_freq, normalize_advantage, tensorboard_log, create_eval_env, policy_kwargs, verbose, seed,
@@ -18,6 +19,9 @@ class intrinsic_A2C(A2C):
         self.motivation_model = motivation_model
         self.batch_for_icm = {"old obs": [], "action": [], "new obs": []}
         self.intrinsic_reward_coef = intrinsic_reward_coef
+        self.warmup_steps = warmup_steps
+        self.global_counter = global_counter
+        self.motivation_grad_norm = motivation_grad_norm
         if use_rms_prop and "optimizer_class" not in self.policy_kwargs:
             self.model_optimizer = th.optim.RMSprop(params=motivation_model.parameters(), 
                                                     alpha=0.99, eps=rms_prop_eps, weight_decay=0, lr=motivation_lr)
@@ -102,9 +106,14 @@ class intrinsic_A2C(A2C):
         new_obs = obs_as_tensor(new_obs, self.device)
         obs, action, new_obs = obs.to(th.float), th.from_numpy(action).to(self.device), new_obs.to(th.float)
         self.save_batch_for_icm(obs, action, new_obs)
-        int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
+        int_reward = np.zeros(rewards.shape)
         ext_reward = rewards
-        rewards = int_reward*self.intrinsic_reward_coef + ext_reward*(1-self.intrinsic_reward_coef)
+        if self.global_counter.get_count() < self.warmup_steps:
+            rewards = rewards
+        else:
+            int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
+            int_reward = np.clip(int_reward, 0, 1)
+            rewards = int_reward*self.intrinsic_reward_coef + ext_reward*(1-self.intrinsic_reward_coef)
         return rewards, int_reward, ext_reward
 
     def save_batch_for_icm(self, obs, action, new_obs):
@@ -130,11 +139,12 @@ class intrinsic_A2C(A2C):
         forward_loss, inverse_loss = forward_loss.detach().item(), inverse_loss.detach().item()
         self.model_optimizer.zero_grad()
         icm_loss.backward()
-        self.model_optimizer.step()
         self.logger.record("train/icm_loss", icm_loss_value)
         self.logger.record("train/forward_loss", forward_loss)
         self.logger.record("train/inverse_loss", inverse_loss)
         self.logger.record("train/ICM grad norm", self.calculate_grad_norm(self.motivation_model))
+        clip_grad_norm_(self.motivation_model.parameters(), self.motivation_grad_norm)
+        self.model_optimizer.step()
         
     def calculate_grad_norm(self, model):
         total_norm = 0

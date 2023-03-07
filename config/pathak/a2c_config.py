@@ -1,3 +1,6 @@
+from agents.neural_network_ext import ActorCritic
+from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
+
 # Learning rate of A2C optimizer
 # Pathak
 LR = 1e-04
@@ -38,6 +41,9 @@ MAX_GRAD_NORM = 40.
 # Pathak
 RMS_PROP = False
 
+# Policy_kwargs
+POLICY_KWARGS = dict(features_extractor_class=ActorCritic)
+
 config_dict = {
     "LR": LR,
     "LR_FACTOR - batch normalization from Pathak repo": LR_FACTOR,
@@ -48,5 +54,6 @@ config_dict = {
     "ENTROPY_COEF - entropy coefficient of entropy loss": ENTROPY_COEF,
     "VALUE_LOSS_COEF - value loss coefficient of A2C loss": VALUE_LOSS_COEF,
     "MAX_GRAD_NORM - maximal gradient norm for A2C gradients": MAX_GRAD_NORM,
-    "RMS_PROP - do we use RMS_PROP or Adam as optimizer (False -> Adam, True -> RMS_PROP)": RMS_PROP
+    "RMS_PROP - do we use RMS_PROP or Adam as optimizer (False -> Adam, True -> RMS_PROP)": RMS_PROP,
+    "Policy kwargs argument": str(POLICY_KWARGS)
 }

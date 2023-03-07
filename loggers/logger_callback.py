@@ -23,13 +23,15 @@ class LoggerCallback(BaseCallback):
         # Local stats
         self.local_mean_reward = {"intrinsic": [], "extrinsic": []}
         self.local_max_x_pos = np.array([-1 for i in range(self.logged_agents)])
+        self.local_prob_of_right_action = []
         
 
     def _log_local(self, x_pos, ext_reward, int_reward):
         self.local_max_x_pos = np.max(np.stack((self.local_max_x_pos, x_pos)), axis=0)
         self.local_mean_reward["intrinsic"].append(int_reward[:self.logged_agents])
         self.local_mean_reward["extrinsic"].append(ext_reward[:self.logged_agents])
-        if self.global_counter.get_count()%25==0 and self.global_counter.get_count()>0:
+        self.log_probabilities(self.model.motivation_model, self.locals["obs_tensor"], self.locals["new_obs"], self.locals["actions"])
+        if self.global_counter.get_count()%self.log_freq==0 and self.global_counter.get_count()>0:
             mean_agent_reward_int = np.array(self.local_mean_reward["intrinsic"])
             mean_agent_reward_ext = np.array(self.local_mean_reward["extrinsic"])
             for agent in range(self.logged_agents):
@@ -42,6 +44,19 @@ class LoggerCallback(BaseCallback):
         self.local_max_x_pos = np.zeros(self.local_max_x_pos.shape)-1
         self.local_mean_reward["intrinsic"] = []
         self.local_mean_reward["extrinsic"] = []
+
+
+    def log_probabilities(self, motivation_model, old_obs, new_obs, target_actions):
+        with torch.no_grad():
+            new_obs = torch.from_numpy(new_obs).to(torch.float32).to("cuda:0" if torch.cuda.is_available() else "cpu")
+            old_obs = old_obs.to(torch.float32).to("cuda:0" if torch.cuda.is_available() else "cpu")
+            probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
+            mean_probability_of_right_action = probabilities[torch.arange(0, target_actions.shape[-1]), target_actions].mean().item()
+        self.local_prob_of_right_action.append(mean_probability_of_right_action)
+        if self.global_counter.get_count()%self.log_freq==0 and self.global_counter.get_count()>0:
+            wandb.log({"mean/train/mean probability of right action from {} previous steps".format(self.log_freq): 
+                       np.mean(mean_probability_of_right_action)}, step = self.global_counter.get_count())
+            mean_probability_of_right_action = []
 
 
     def _on_step(self):
