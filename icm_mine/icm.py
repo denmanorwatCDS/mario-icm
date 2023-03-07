@@ -98,9 +98,9 @@ class ICM(nn.Module):
         next_state = self.feature(next_observation)
         action_logits = self.inverse_net(state, next_state)
         # TODO: change to detach, maybe torch.no_grad() isn't needed
-        with torch.no_grad():
-            const_state = self.feature(observation)
-            const_next_state = self.feature(next_observation)
+        #with torch.no_grad():
+        const_state = self.feature(observation)
+        const_next_state = self.feature(next_observation)
         predicted_state = self.forward_net(const_state, action.detach())
         return action_logits, predicted_state, const_next_state
 
