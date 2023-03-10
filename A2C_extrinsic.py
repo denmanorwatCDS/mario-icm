@@ -20,7 +20,7 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
 from config import log_config
-from config.stable_baselines3 import environment_config, a2c_config, icm_config, hyperparameters
+from config.pathak import environment_config, a2c_config, icm_config, hyperparameters
 from agents.neural_network_ext import ActorCritic
 
 if environment_config.SEED != -1:

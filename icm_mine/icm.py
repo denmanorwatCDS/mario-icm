@@ -111,16 +111,22 @@ class ICM(nn.Module):
         CE_loss = nn.CrossEntropyLoss()
         # TODO: remove self.action_space_size and self.beta into ICM
         action_one_hot = F.one_hot(action.flatten(), num_classes = 12).detach()
+        self.raw_inverse_loss = CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         inverse_pred_err =\
-            self.inv_scale*CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
+            self.inv_scale*self.raw_inverse_loss
+        self.raw_inverse_loss = self.raw_inverse_loss.detach()
         # WARNING: Pathak had 1/2, authors of the book hand't!
+        self.raw_forward_loss = ((next_states-predicted_states)**2).sum(dim = 1).mean()
         forward_pred_err =\
-            1/2*self.forward_scale*((next_states-predicted_states)**2).sum(dim = 1).mean()
+            1/2*self.forward_scale*self.raw_forward_loss
+        self.raw_forward_loss = self.raw_forward_loss.detach()
         return forward_pred_err, inverse_pred_err
     
 
     def get_icm_loss(self, observation, action, next_observation):
         forward_loss, inverse_loss = self.get_losses(observation, action, next_observation)
+        self.forward_loss = forward_loss.detach()*self.beta
+        self.inverse_loss = self.inverse_loss.detach()*(1-self.beta)
         return forward_loss*self.beta + (1-self.beta)*inverse_loss
         
 

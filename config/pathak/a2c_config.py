@@ -2,15 +2,15 @@ from agents.neural_network_ext import ActorCritic
 from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 # Learning rate of A2C optimizer
-# Pathak
-LR = 1e-04
+# Pathak had 1e-04
+LR = 0.0001
 
 #LR multiplier
 # Pathak: batch factorization (Pathak had 20)
-LR_FACTOR = 1
+LR_FACTOR = 20
 
 # Number of forward steps in A3C (default: 20):
-# Pathak
+# Pathak had 20
 NUM_STEPS = 5 # 20
 
 # Number of agents in A2C
@@ -26,16 +26,16 @@ GAMMA = 0.99
 GAE_LAMBDA = 1.
 
 # Entropy coef
-# Pathak
-ENTROPY_COEF = 0.0005
+# Pathak had 0.0005
+ENTROPY_COEF = 0.01
 
 # Value loss coefficient
-# Pathak
-VALUE_LOSS_COEF = 0.5
+# Pathak had 0.5
+VALUE_LOSS_COEF = 0.25
 
 # Max grad norm
-# Pathak
-MAX_GRAD_NORM = 40.
+# Pathak Was 40
+MAX_GRAD_NORM = 0.5
 
 # Use RMS prop
 # Pathak

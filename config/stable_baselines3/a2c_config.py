@@ -38,8 +38,8 @@ VALUE_LOSS_COEF = 0.25
 MAX_GRAD_NORM = 0.5
 
 # Use RMS prop
-# SB3
-RMS_PROP = True
+# SB3 True
+RMS_PROP = False
 
 # Policy_kwargs
 POLICY_KWARGS = dict(optimizer_class=RMSpropTFLike, optimizer_kwargs=dict(eps=1e-5), 

@@ -20,14 +20,20 @@ LR = 1e-03
 
 # ICM inverse loss scale
 # Pathak: "batch" factorization (Pathak had 20)
-INVERSE_SCALE=20
+INVERSE_SCALE=1.
 
 # ICM forward loss scale
 # Pathak: "batch" and "features" factorization (Pathak had 288*20)
-FORWARD_SCALE=288*20
+FORWARD_SCALE=288
 
 # ICM grad norm
 GRAD_NORM = 40.0
+
+# Warmup steps:
+WARMUP = 0
+
+# Intrinsic reward coef:
+INTRINSIC_REWARD_COEF = 1.
 
 config_dict = {
     "ETA - multiplier of intrinsic reward": ETA,
@@ -37,5 +43,7 @@ config_dict = {
     "LR - learning rate of ICM model": LR,
     "INVERSE_SCALE - factor before inverse loss - as Pathak stated, for \"batch\' factorization": INVERSE_SCALE,
     "FORWARD_SCALE - similiar to INVERSE_SCALE, but not only batch, but also features factorization": FORWARD_SCALE,
-    "GRAD_NORM - gradient norm clipping for ICM": GRAD_NORM
+    "GRAD_NORM - gradient norm clipping for ICM": GRAD_NORM,
+    "WARMUP - warmup steps for ICM": WARMUP,
+    "INTRINSIC_REWARD_COEF - intrinsic reward coefficient for model": INTRINSIC_REWARD_COEF
 }
