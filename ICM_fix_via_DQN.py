@@ -127,6 +127,7 @@ for i in range(epochs):
         action = int(policy(q_val_pred))
     for j in range(params['action_repeats']): #D
         state2, e_reward_, done, info = env.step(action)
+        print(info.keys())
         #last_x_pos = info['x_pos']
         if done:
             state1 = reset_env(env)

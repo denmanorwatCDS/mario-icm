@@ -6,9 +6,11 @@ class A2CLogger(Logger):
     def __init__(self, log_frequency, folder, output_formats, global_counter):
         super().__init__(folder, output_formats)
         self.model_logs = {"train/entropy_loss": [], "train/policy_loss": [],
-                           "train/value_loss": [], "train/icm_loss": [],
-                           "train/forward_loss": [], "train/inverse_loss": [],
-                           "train/ICM grad norm": [], "train/A2C grad norm": []}
+                           "train/value_loss": [], "train/final/icm_loss": [],
+                           "train/final/forward_loss": [], "train/final/inverse_loss": [],
+                           "train/raw/forward_loss": [], "train/raw/inverse_loss": [],
+                           "train/grads/ICM grad norm (Before clipping)": [], 
+                           "train/grads/A2C grad norm (After clipping)": []}
         self.global_counter = global_counter
         self.log_frequency = log_frequency
         self.calls_quantity = 0

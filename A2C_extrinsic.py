@@ -20,7 +20,7 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 
 from config import log_config
-from config.pathak import environment_config, a2c_config, icm_config, hyperparameters
+from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
 from agents.neural_network_ext import ActorCritic
 
 if environment_config.SEED != -1:
@@ -44,8 +44,9 @@ if __name__=="__main__":
     env_id = "SuperMarioBros-1-1-v0" # SuperMarioBros
     global_counter = GlobalCounter()
     icm = ICM(environment_config.ACTION_SPACE_SIZE, environment_config.TEMPORAL_CHANNELS, 
-              icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, hidden_layer_neurons=icm_config.HIDDEN_LAYERS,
-              beta=icm_config.BETA, eta=icm_config.ETA, feature_map_qty=icm_config.FMAP_QTY)\
+              icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, 
+              hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA, 
+              feature_map_qty=icm_config.FMAP_QTY)\
                 .to("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Eval and train environments
@@ -58,8 +59,8 @@ if __name__=="__main__":
     policy_kwargs = a2c_config.POLICY_KWARGS
 
     model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, 
-                          motivation_grad_norm=icm_config.GRAD_NORM, global_counter=global_counter, warmup_steps=icm_config.WARMUP, 
-                          intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF, learning_rate=a2c_config.LR*a2c_config.LR_FACTOR, 
+                          motivation_grad_norm=icm_config.GRAD_NORM, intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF,
+                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=a2c_config.LR, 
                           n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
                           ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF, max_grad_norm=a2c_config.MAX_GRAD_NORM, 
                           use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
@@ -67,6 +68,7 @@ if __name__=="__main__":
 
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
     model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Extrinsic A2C", 
-                                                                     hyperparameters.HYPERPARAMS, global_counter = global_counter), 
+                                                                     hyperparameters.HYPERPARAMS, global_counter = global_counter, 
+                                                                     num_agents = a2c_config.NUM_AGENTS), 
                                                       LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
                                                                          global_counter=global_counter)])

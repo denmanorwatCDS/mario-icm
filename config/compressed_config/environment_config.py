@@ -32,5 +32,4 @@ config_dict = {
     "TEMPORAL CHANNELS - quantity of sequential frames, placed in channel places": TEMPORAL_CHANNELS,
     "ACTION_SKIP - how much action repeat in environment": ACTION_SKIP,
     "FPS - fps of submitted video": FPS
-
 }

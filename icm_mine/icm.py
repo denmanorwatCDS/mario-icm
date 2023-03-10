@@ -74,10 +74,9 @@ class SimplefeatureNet(nn.Module):
 
 class ICM(nn.Module):
     def __init__(self, action_dim, temporal_channels, inv_scale, forward_scale,
-                use_softmax = True, hidden_layer_neurons=256, beta=1/2, eta=1/2, feature_map_qty=32,):
+                use_softmax, hidden_layer_neurons, eta, feature_map_qty,):
         super(ICM, self).__init__()
         self.eta = eta
-        self.beta = beta
         self.inv_scale = inv_scale
         self.forward_scale = forward_scale
         self.use_softmax = use_softmax
@@ -114,20 +113,20 @@ class ICM(nn.Module):
         self.raw_inverse_loss = CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         inverse_pred_err =\
             self.inv_scale*self.raw_inverse_loss
-        self.raw_inverse_loss = self.raw_inverse_loss.detach()
+        self.raw_inverse_loss = self.raw_inverse_loss.detach().cpu()
         # WARNING: Pathak had 1/2, authors of the book hand't!
         self.raw_forward_loss = ((next_states-predicted_states)**2).sum(dim = 1).mean()
         forward_pred_err =\
-            1/2*self.forward_scale*self.raw_forward_loss
-        self.raw_forward_loss = self.raw_forward_loss.detach()
+            self.forward_scale*self.raw_forward_loss
+        self.raw_forward_loss = self.raw_forward_loss.detach().cpu()
         return forward_pred_err, inverse_pred_err
     
 
     def get_icm_loss(self, observation, action, next_observation):
         forward_loss, inverse_loss = self.get_losses(observation, action, next_observation)
-        self.forward_loss = forward_loss.detach()*self.beta
-        self.inverse_loss = self.inverse_loss.detach()*(1-self.beta)
-        return forward_loss*self.beta + (1-self.beta)*inverse_loss
+        self.forward_loss = forward_loss.detach().cpu()
+        self.inverse_loss = inverse_loss.detach().cpu()
+        return forward_loss + inverse_loss
         
 
     def intrinsic_reward(self, observation, action, next_observation):

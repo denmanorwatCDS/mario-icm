@@ -33,6 +33,7 @@ class intrinsic_A2C(A2C):
         assert self._last_obs is not None, "No previous observation was provided"
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
+        self.prev_dones = np.full((env.num_envs), False)
 
         n_steps = 0
         rollout_buffer.reset()
@@ -60,7 +61,8 @@ class intrinsic_A2C(A2C):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
-            rewards, int_reward, ext_reward = self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards)
+            rewards, int_reward, ext_reward = self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, self.prev_dones)
+            self.prev_dones = dones
 
             self.num_timesteps += env.num_envs
 
@@ -102,24 +104,29 @@ class intrinsic_A2C(A2C):
         callback.on_rollout_end()
         return True
     
-    def calculate_new_reward(self, obs, action, new_obs, rewards):
+    def calculate_new_reward(self, obs, action, new_obs, rewards, prev_dones):
         new_obs = obs_as_tensor(new_obs, self.device)
         obs, action, new_obs = obs.to(th.float), th.from_numpy(action).to(self.device), new_obs.to(th.float)
-        self.save_batch_for_icm(obs, action, new_obs)
+        self.save_batch_for_icm(obs, action, new_obs, prev_dones)
         int_reward = np.zeros(rewards.shape)
         ext_reward = rewards
         if self.global_counter.get_count() < self.warmup_steps:
             rewards = rewards
+            return rewards, 0, rewards
         else:
             int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
             int_reward = np.clip(int_reward, 0, 1)
+            int_reward[prev_dones==True] = 0
             rewards = int_reward*self.intrinsic_reward_coef + ext_reward*(1-self.intrinsic_reward_coef)
-        return rewards, int_reward, ext_reward
+        return rewards, int_reward*self.intrinsic_reward_coef, ext_reward*(1-self.intrinsic_reward_coef)
 
-    def save_batch_for_icm(self, obs, action, new_obs):
-        self.batch_for_icm["old obs"].append(obs)
-        self.batch_for_icm["action"].append(action)
-        self.batch_for_icm["new obs"].append(new_obs)
+    def save_batch_for_icm(self, obs, action, new_obs, prev_dones):
+        relevant_obs = obs[prev_dones==False]
+        relevant_action = action[prev_dones==False]
+        relevant_new_obs = new_obs[prev_dones==False]
+        self.batch_for_icm["old obs"].append(relevant_obs)
+        self.batch_for_icm["action"].append(relevant_action)
+        self.batch_for_icm["new obs"].append(relevant_new_obs)
 
     def get_batch_for_icm(self):
         old_obs = th.concat(self.batch_for_icm["old obs"], dim=0)
@@ -140,11 +147,12 @@ class intrinsic_A2C(A2C):
         self.model_optimizer.zero_grad()
         icm_loss.backward()
         self.logger.record("train/final/icm_loss", icm_loss_value)
-        self.logger.record("train/final/forward_loss", self.motivation_model.forward_loss)
-        self.logger.record("train/final/inverse_loss", self.motivation_model.inverse_loss)
-        self.logger.record("train/raw/forward_loss", self.motivation_model.raw_forward_loss)
-        self.logger.record("train/raw/inverse_loss", self.motivation_model.raw_inverse_loss)
-        self.logger.record("train/raw/ICM grad norm", self.calculate_grad_norm(self.motivation_model))
+        self.logger.record("train/final/forward_loss", self.motivation_model.forward_loss.item())
+        self.logger.record("train/final/inverse_loss", self.motivation_model.inverse_loss.item())
+        self.logger.record("train/raw/forward_loss", self.motivation_model.raw_forward_loss.item())
+        self.logger.record("train/raw/inverse_loss", self.motivation_model.raw_inverse_loss.item())
+        self.logger.record("train/grads/ICM grad norm (Before clipping)", self.calculate_grad_norm(self.motivation_model))
+        self.logger.record("train/grads/A2C grad norm (After clipping)", self.calculate_grad_norm(self.policy))
         clip_grad_norm_(self.motivation_model.parameters(), self.motivation_grad_norm)
         self.model_optimizer.step()
         

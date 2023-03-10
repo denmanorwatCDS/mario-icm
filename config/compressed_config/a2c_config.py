@@ -2,43 +2,39 @@ from agents.neural_network_ext import ActorCritic
 from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 # Learning rate of A2C optimizer
-# Pathak had 1e-04
-LR = 0.0001
-
-#LR multiplier
-# Pathak: batch factorization (Pathak had 20)
-LR_FACTOR = 20
+# SB3+Pathak (One changed parameter)
+LR = 0.0007
 
 # Number of forward steps in A3C (default: 20):
-# Pathak had 20
+# SB3
 NUM_STEPS = 5 # 20
 
 # Number of agents in A2C
-# Pathak
+# SB3
 NUM_AGENTS = 20
 
 # Discount factor
-# Pathak
+# SB3
 GAMMA = 0.99
 
 # Lambda parameter for GAE
-# Pathak
+# SB3
 GAE_LAMBDA = 1.
 
 # Entropy coef
-# Pathak had 0.0005
+# SB3
 ENTROPY_COEF = 0.01
 
 # Value loss coefficient
-# Pathak had 0.5
+# SB3
 VALUE_LOSS_COEF = 0.25
 
 # Max grad norm
-# Pathak Was 40
+# SB3
 MAX_GRAD_NORM = 0.5
 
 # Use RMS prop
-# Pathak
+# SB3 True
 RMS_PROP = False
 
 # Policy_kwargs
@@ -46,7 +42,6 @@ POLICY_KWARGS = dict(features_extractor_class=ActorCritic)
 
 config_dict = {
     "LR": LR,
-    "LR_FACTOR - batch normalization from Pathak repo": LR_FACTOR,
     "NUM_STEPS - quantity of rollout steps": NUM_STEPS,
     "NUM_AGENTS - number of agents, that work in parallel": NUM_AGENTS,
     "GAMMA - discount factor of reward": GAMMA,
