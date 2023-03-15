@@ -48,7 +48,7 @@ class SimplefeatureNet(nn.Module):
         super(SimplefeatureNet, self).__init__()
         # TODO No normalization. Maybe, they are not needed because of temporal channels
         self.simple_encoder =\
-        nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
+        nn.Sequential(nn.Conv2d(in_channels = 1, 
                                 out_channels = feature_map_qty, kernel_size = 3, stride = 2, 
                                 padding = 1),
                       nn.ELU(),
@@ -109,7 +109,7 @@ class ICM(nn.Module):
             self(observation, action, next_observation)
         CE_loss = nn.CrossEntropyLoss()
         # TODO: remove self.action_space_size and self.beta into ICM
-        action_one_hot = F.one_hot(action.flatten(), num_classes = 12).detach()
+        action_one_hot = F.one_hot(action.flatten(), num_classes = self.action_dim).detach()
         self.raw_inverse_loss = CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         inverse_pred_err =\
             self.inv_scale*self.raw_inverse_loss
@@ -151,5 +151,5 @@ class ICM(nn.Module):
                 probabilities = action_logits
             # WARNING because we use softmax as layer of inverse net, we already have probabilities
             else:
-                probabilities = torch.softmax(action_logits, dim=1)
+                probabilities = F.softmax(action_logits)
             return probabilities

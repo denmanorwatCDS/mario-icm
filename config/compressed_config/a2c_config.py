@@ -3,7 +3,7 @@ from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 # Learning rate of A2C optimizer
 # SB3+Pathak (One changed parameter)
-LR = 0.0007
+LR = 0.0007 # was 0.0007
 
 # Number of forward steps in A3C (default: 20):
 # SB3
@@ -27,7 +27,7 @@ ENTROPY_COEF = 0.01
 
 # Value loss coefficient
 # SB3
-VALUE_LOSS_COEF = 0.25
+VALUE_LOSS_COEF = 0.25 # was 0.25
 
 # Max grad norm
 # SB3

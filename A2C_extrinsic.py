@@ -1,8 +1,12 @@
+from gym_minigrid.envs import FourRoomsEnv
+from minigrid_wrappers.imagedirection import RGBImgObsDirectionWrapper, FullyObsDirectionWrapper
+from minigrid_wrappers.movementactions import MovementActions
+from gym.wrappers import TimeLimit
+
 import torch
 import random
 import gym
 import numpy as np
-from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
 from stable_baselines3.common.atari_wrappers import WarpFrame
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env import VecFrameStack
@@ -17,11 +21,14 @@ from stable_baselines_intrinsic.intrinsic_a2c import intrinsic_A2C
 from icm_mine.icm import ICM
 
 from nes_py.wrappers import JoypadSpace
+from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
+from wrappers.LastAndSkipEnv import LastAndSkipEnv
 import gym_super_mario_bros
 
 from config import log_config
 from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
 from agents.neural_network_ext import ActorCritic
+from environments.empty_limited import EmptyEnvLimited
 
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
@@ -32,18 +39,20 @@ def make_env(env_id, rank, seed=0):
     def _init():
         env = gym.make(env_id)
         env.seed(seed + rank)
-        env = JoypadSpace(env, environment_config.ALL_ACTION_SPACE)
+        env = FullyObsDirectionWrapper(env)
+        env = RGBImgObsDirectionWrapper(env)
+        env = MovementActions(env)
+        env = TimeLimit(env, 100)
         env = WarpFrame(env, width=42, height=42)
-        env = MaxAndSkipEnv(env, skip=environment_config.ACTION_SKIP)
         return env
     set_random_seed(seed)
     return _init
 
 if __name__=="__main__":
-    parallel_envs = a2c_config.NUM_AGENTS # 20
-    env_id = "SuperMarioBros-1-1-v0" # SuperMarioBros
+    parallel_envs = 20 # 20
+    env_id = "MiniGrid-EmptyEnvLimited-v0" # SuperMarioBros
     global_counter = GlobalCounter()
-    icm = ICM(environment_config.ACTION_SPACE_SIZE, environment_config.TEMPORAL_CHANNELS, 
+    icm = ICM(4, environment_config.TEMPORAL_CHANNELS, 
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, 
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA, 
               feature_map_qty=icm_config.FMAP_QTY)\
@@ -67,7 +76,7 @@ if __name__=="__main__":
 
 
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
-    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Extrinsic A2C", 
+    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Minigrid A2C", 
                                                                      hyperparameters.HYPERPARAMS, global_counter = global_counter, 
                                                                      num_agents = a2c_config.NUM_AGENTS), 
                                                       LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 

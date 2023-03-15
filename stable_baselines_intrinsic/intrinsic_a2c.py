@@ -142,8 +142,6 @@ class intrinsic_A2C(A2C):
         old_obs, action_batch, new_obs = self.get_batch_for_icm()
         icm_loss = self.motivation_model.get_icm_loss(old_obs, action_batch, new_obs)
         icm_loss_value = icm_loss.detach().item()
-        forward_loss, inverse_loss = self.motivation_model.get_losses(old_obs, action_batch, new_obs)
-        forward_loss, inverse_loss = forward_loss.detach().item(), inverse_loss.detach().item()
         self.model_optimizer.zero_grad()
         icm_loss.backward()
         self.logger.record("train/final/icm_loss", icm_loss_value)

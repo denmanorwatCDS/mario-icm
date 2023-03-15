@@ -1,6 +1,6 @@
 # Eta coefficient for ICM - multiplier of reward
 # Pathak 
-ETA = 57.6
+ETA = 0.2
 
 # Hidden layers of ICM linear layer
 # Pathak
@@ -15,12 +15,12 @@ FMAP_QTY = 32
 LR = 1e-03
 
 # ICM inverse loss scale
-# Pathak: "batch" factorization (Pathak had 20)
-INVERSE_SCALE = 16
+# Pathak: "batch" factorization (Pathak had 16)
+INVERSE_SCALE = 1
 
 # ICM forward loss scale
-# Pathak: "batch" and "features" factorization (Pathak had 288*20)
-FORWARD_SCALE = 28.8
+# Pathak: "batch" and "features" factorization (Pathak had 2)
+FORWARD_SCALE = 1
 
 # ICM grad norm
 GRAD_NORM = 40.0
