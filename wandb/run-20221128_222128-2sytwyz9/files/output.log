@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/dvasilev/mario_icm/main.py", line 27, in <module>
-    env = JoypadSpaceWithObservation(env, ALL_ACTION_SPACE)
-  File "/home/dvasilev/mario_icm/Environment_wrappers/wrappers.py", line 99, in __init__
-    self.state = self.env.state
-  File "/home/dvasilev/mario_icm/.conda/lib/python3.9/site-packages/gym/core.py", line 238, in __getattr__
-    return getattr(self.env, name)
-AttributeError: 'SuperMarioBrosEnv' object has no attribute 'state'
