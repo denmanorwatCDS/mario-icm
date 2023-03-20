@@ -39,9 +39,9 @@ if environment_config.SEED != -1:
 
 def make_env(env_id, grid_size, rank, seed=0):
     def _init():
-        env = gym.make(env_id, grid_size=grid_size)
+        env = gym.make(env_id)
         env.seed(seed + rank)
-        env = RGBImgObsDirectionWrapper(env, grid_size=grid_size, restriction=3)
+        env = RGBImgObsDirectionWrapper(env, grid_size=grid_size, restriction=None)
         env = MovementActions(env)
         env = TimeLimit(env, 1_000)
         env = WarpFrame(env, width=42, height=42)
