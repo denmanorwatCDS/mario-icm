@@ -61,6 +61,7 @@ class intrinsic_A2C(A2C):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
+            rewards[rewards>0] = 1
             rewards, int_reward, ext_reward = self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, self.prev_dones)
             self.prev_dones = dones
 

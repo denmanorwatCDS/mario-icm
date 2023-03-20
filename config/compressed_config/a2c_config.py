@@ -11,7 +11,7 @@ NUM_STEPS = 5 # 20
 
 # Number of agents in A2C
 # SB3
-NUM_AGENTS = 20
+NUM_AGENTS = 6
 
 # Discount factor
 # SB3
@@ -23,7 +23,7 @@ GAE_LAMBDA = 1.
 
 # Entropy coef
 # SB3
-ENTROPY_COEF = 0.01
+ENTROPY_COEF = 0.0005
 
 # Value loss coefficient
 # SB3

@@ -30,8 +30,8 @@ def evaluate_policy(
     for i in range(n_eval_episodes):
         done = np.array([False])
         observation = env.reset()
-        current_reward = 0
-        current_length = 0
+        current_reward = 0.
+        current_length = 0.
         while not done[0]:
             action, states = model.predict(observation, deterministic=deterministic)
             observation, reward, done, info = env.step(action)

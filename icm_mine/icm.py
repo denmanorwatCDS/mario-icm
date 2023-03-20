@@ -48,7 +48,7 @@ class SimplefeatureNet(nn.Module):
         super(SimplefeatureNet, self).__init__()
         # TODO No normalization. Maybe, they are not needed because of temporal channels
         self.simple_encoder =\
-        nn.Sequential(nn.Conv2d(in_channels = 1, 
+        nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
                                 out_channels = feature_map_qty, kernel_size = 3, stride = 2, 
                                 padding = 1),
                       nn.ELU(),

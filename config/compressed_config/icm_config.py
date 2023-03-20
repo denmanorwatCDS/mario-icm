@@ -1,6 +1,6 @@
 # Eta coefficient for ICM - multiplier of reward
 # Pathak 
-ETA = 0.2
+ETA = 0.02
 
 # Hidden layers of ICM linear layer
 # Pathak
@@ -16,11 +16,11 @@ LR = 1e-03
 
 # ICM inverse loss scale
 # Pathak: "batch" factorization (Pathak had 16)
-INVERSE_SCALE = 1
+INVERSE_SCALE = 0.8
 
 # ICM forward loss scale
 # Pathak: "batch" and "features" factorization (Pathak had 2)
-FORWARD_SCALE = 1
+FORWARD_SCALE = 0.2
 
 # ICM grad norm
 GRAD_NORM = 40.0
@@ -29,7 +29,7 @@ GRAD_NORM = 40.0
 WARMUP = 0
 
 # Intrinsic reward coef:
-INTRINSIC_REWARD_COEF = 1.
+INTRINSIC_REWARD_COEF = 0.
 
 config_dict = {
     "ETA - multiplier of intrinsic reward": ETA,

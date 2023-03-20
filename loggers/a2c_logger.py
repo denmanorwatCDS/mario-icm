@@ -5,6 +5,7 @@ import wandb
 class A2CLogger(Logger):
     def __init__(self, log_frequency, folder, output_formats, global_counter):
         super().__init__(folder, output_formats)
+        wandb.init(project = "Minigrid A2C")
         self.model_logs = {"train/entropy_loss": [], "train/policy_loss": [],
                            "train/value_loss": [], "train/final/icm_loss": [],
                            "train/final/forward_loss": [], "train/final/inverse_loss": [],
@@ -23,6 +24,7 @@ class A2CLogger(Logger):
         if key == "train/n_updates":
             self.calls_quantity = value
         if self.calls_quantity > self.log_frequency and self.calls_quantity%self.log_frequency==1 and key in self.model_logs.keys():
+            print(key, np.mean(self.model_logs[key]))
             wandb_log_info = {}
             loss_name, loss_stats = key, self.model_logs[key]
             wandb_log_info["mean/" + key + " of {} steps".format(self.log_frequency)] = np.mean(loss_stats)
