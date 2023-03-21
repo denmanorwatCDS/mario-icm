@@ -1,8 +1,8 @@
 # Interval in which average loss data for further wandb logging
-LOSS_LOG_FREQUENCY = 100
+LOSS_LOG_FREQUENCY = 500
 
 # Interval in which average env data for further wandb logging
-AGENT_LOG_FREQUENCY = 100
+AGENT_LOG_FREQUENCY = 500
 
 # Video FPS
 fps = 30

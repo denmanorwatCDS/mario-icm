@@ -15,15 +15,15 @@ NUM_AGENTS = 20
 
 # Discount factor
 # SB3
-GAMMA = 0.99
+GAMMA = 0.999
 
 # Lambda parameter for GAE
 # SB3
 GAE_LAMBDA = 1.
 
 # Entropy coef
-# SB3
-ENTROPY_COEF = 0.01
+# SB3; Was 0.0005
+ENTROPY_COEF = 0.0005
 
 # Value loss coefficient
 # SB3

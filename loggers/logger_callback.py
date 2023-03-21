@@ -2,6 +2,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 import torch
 import wandb
 import numpy as np
+from torchvision.transforms import Grayscale
 
 class LoggerCallback(BaseCallback):
     def __init__(self, log_freq, verbose, wandb_project_name, config, global_counter, num_agents, logged_agents = 3):
@@ -24,6 +25,9 @@ class LoggerCallback(BaseCallback):
         self.local_mean_reward = {"intrinsic": [], "extrinsic": []}
         self.local_prob_of_right_action = []
         self.agent_episode = [0 for i in range(self.num_agents)]
+        # Mean vest findings
+        self.closest_empty_cell_by_agent = np.zeros(self.num_agents)
+        self.episode_to_agent_to_vest = [[None for i in range(self.num_agents)]]
         
 
     def _log_local(self, ext_reward, int_reward):
@@ -38,8 +42,8 @@ class LoggerCallback(BaseCallback):
                            np.mean(mean_agent_reward_int[:, agent]),
                            "Dynamics/Mean extrinsic reward from {} previous steps. Agent #{}".format(self.log_freq, agent):
                            np.mean(mean_agent_reward_ext[:, agent])}, step = self.global_counter.get_count())
-        self.local_mean_reward["intrinsic"] = []
-        self.local_mean_reward["extrinsic"] = []
+            self.local_mean_reward["intrinsic"] = []
+            self.local_mean_reward["extrinsic"] = []
 
 
     def log_probabilities(self, motivation_model, old_obs, new_obs, target_actions):
@@ -65,14 +69,22 @@ class LoggerCallback(BaseCallback):
         train_dones = self.locals["dones"]
         infos = self.locals["infos"]
         self.update_globals(observations, int_rewards, ext_rewards)
-                
+        
+
         for agent_idx in range(self.num_agents):
+            if train_dones[agent_idx]:
+                found_vest = self.episode_reward["extrinsic"]
+                self.update_found_vest(agent_idx, found_vest)
             if train_dones[agent_idx] and agent_idx < self.logged_agents:
                 video_of_agent = torch.stack(self.video_array[agent_idx]).detach().cpu().numpy()
-                wandb.log({"Global/Extrisnic reward per episode of agent #{}".format(agent_idx):
-                           self.episode_reward["extrinsic"][agent_idx],
-                           "Global/Intrinsic reward per episode of agent #{}".format(agent_idx):
+                wandb.log({"Global/Target/Agent #{} found vest ".format(agent_idx):
+                           found_vest,
+                           "Global/Rewards/Intrinsic reward per episode of agent #{}".format(agent_idx):
                            self.episode_reward["intrinsic"][agent_idx],
+                           "Global/Rewards/Extrinsic reward per episode of agent #{}".format(agent_idx):
+                           self.episode_reward["extrinsic"][agent_idx],
+                           "Global/Target/Total_reward of agent #{}".format(agent_idx):
+                           self.episode_reward["intrinsic"][agent_idx] + self.episode_reward["extrinsic"][agent_idx],
                            "Video/Video of train evaluation of agent #{}".format(agent_idx): 
                            wandb.Video(video_of_agent, fps=30)},
                            step = self.global_counter.get_count())
@@ -81,12 +93,31 @@ class LoggerCallback(BaseCallback):
         return True
 
 
+    def update_found_vest(self, agent, found_vest):
+        closest_empty_cell = int(self.closest_empty_cell_by_agent[agent])
+        self.closest_empty_cell_by_agent[agent] += 1
+        self.episode_to_agent_to_vest[closest_empty_cell][agent] = found_vest
+        if len(self.episode_to_agent_to_vest) == self.closest_empty_cell_by_agent[agent]:
+            self.episode_to_agent_to_vest.append([None for i in range(self.num_agents)])
+        lower_layer_filled = True
+        for agent_found_vest in self.episode_to_agent_to_vest[0]:
+            if agent_found_vest is None:
+                lower_layer_filled = False
+                break
+        if lower_layer_filled:
+            mean_of_findings = np.array(self.episode_to_agent_to_vest[0]).mean()
+            del self.episode_to_agent_to_vest[0]
+            self.closest_empty_cell_by_agent -= 1
+            wandb.log({"Global/Target/Mean of findings of vest": mean_of_findings}, step = self.global_counter.get_count())
+        
+
     def update_globals(self, observations, int_rewards, ext_rewards):
         for agent_idx in range(self.num_agents):
             self.episode_reward["intrinsic"][agent_idx] += int_rewards[agent_idx]
             self.episode_reward["extrinsic"][agent_idx] += ext_rewards[agent_idx]
             if agent_idx < self.logged_agents:
                 self.video_array[agent_idx].append(observations[agent_idx][-1:])
+
 
     def nullify_globals(self, agent_idx):
         self.episode_reward["intrinsic"][agent_idx] = 0

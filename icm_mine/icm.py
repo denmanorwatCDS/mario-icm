@@ -1,6 +1,7 @@
 import torch.nn.functional as F
 import torch
 from torch import nn
+from torchvision.transforms import Grayscale
 
 DEVICE = torch.device("cpu")
 
@@ -47,8 +48,9 @@ class SimplefeatureNet(nn.Module):
     def __init__(self, temporal_channels, feature_map_qty):
         super(SimplefeatureNet, self).__init__()
         # TODO No normalization. Maybe, they are not needed because of temporal channels
+        self.gray = Grayscale(1)
         self.simple_encoder =\
-        nn.Sequential(nn.Conv2d(in_channels = 1, 
+        nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
                                 out_channels = feature_map_qty, kernel_size = 3, stride = 2, 
                                 padding = 1),
                       nn.ELU(),
@@ -67,7 +69,10 @@ class SimplefeatureNet(nn.Module):
 
     def forward(self, x):
         # WARNING Normalize
-        x = F.normalize(x)
+        gray_inputs = [self.gray(x[:, :3]), self.gray(x[:, 3:6]),
+                       self.gray(x[:, 6:9]), self.gray(x[:, 9:])]
+        gray_inputs = torch.cat(gray_inputs, dim=1)
+        x = F.normalize(gray_inputs)
         y = self.simple_encoder(x) #size N, 288
         return y
 
