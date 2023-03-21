@@ -1,8 +1,7 @@
-from gym_minigrid.envs import FourRoomsEnv
+from environments.crossing_limited import FourRoomsEnvLimited
 from minigrid_wrappers.imagedirection import RGBImgObsDirectionWrapper
 from minigrid_wrappers.movementactions import MovementActions
 from gym.wrappers import TimeLimit
-import wandb
 
 import torch
 import random
@@ -11,26 +10,16 @@ import numpy as np
 from stable_baselines3.common.atari_wrappers import WarpFrame
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env import VecFrameStack
-from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 from loggers.logger_callback import LoggerCallback
-from loggers.count_callback import CountCallback
 from loggers.eval_callback import LoggerEvalCallback
 from loggers.a2c_logger import A2CLogger
 from loggers.global_counter import GlobalCounter
 from stable_baselines_intrinsic.intrinsic_a2c import intrinsic_A2C
 from icm_mine.icm import ICM
 
-from nes_py.wrappers import JoypadSpace
-from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv
-from wrappers.LastAndSkipEnv import LastAndSkipEnv
-import gym_super_mario_bros
-
 from config import log_config
 from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
-from agents.neural_network_ext import ActorCritic
-from environments.crossing_limited import FourRoomsEnvLimited
 
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
@@ -39,7 +28,7 @@ if environment_config.SEED != -1:
 
 def make_env(env_id, grid_size, rank, seed=0):
     def _init():
-        env = gym.make(env_id)
+        env = gym.make(env_id, grid_size=grid_size, agent_pos=(1, 1), goal_pos=(grid_size-2, grid_size-2))
         env.seed(seed + rank)
         env = RGBImgObsDirectionWrapper(env, grid_size=grid_size, restriction=None)
         env = MovementActions(env)
@@ -51,8 +40,8 @@ def make_env(env_id, grid_size, rank, seed=0):
 
 if __name__=="__main__":
     parallel_envs = a2c_config.NUM_AGENTS # 20
-    grid_size = 15
-    env_id = "MiniGrid-Empty-16x16-v0" # SuperMarioBros
+    grid_size = 16
+    env_id = "MiniGrid-FourRoomsEnvLimited-v0" # SuperMarioBros
     global_counter = GlobalCounter()
     icm = ICM(4, environment_config.TEMPORAL_CHANNELS, 
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, 
@@ -80,6 +69,6 @@ if __name__=="__main__":
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
     model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Minigrid A2C", 
                                                                      hyperparameters.HYPERPARAMS, global_counter = global_counter, 
-                                                                     num_agents = a2c_config.NUM_AGENTS, all_available_states=grid_size**2), 
+                                                                     num_agents = a2c_config.NUM_AGENTS, all_available_states=(grid_size-2)**2),
                                                       LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
                                                                          global_counter=global_counter)])

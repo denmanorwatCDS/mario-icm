@@ -42,6 +42,9 @@ class LoggerCallback(BaseCallback):
         # Quantity of dones from monitored agents
         self.monitored_agents_done_quantity = 0
 
+        # Visited states across learning
+        self.visited_states = set()
+
     def log_sizes(self):
         print("Local video array: {}, {}".format(len(self.local_video_array), len(self.local_video_array[0])))
         print("Global video array: {}, {}".format(len(self.global_video_array), len(self.global_video_array[0])))
@@ -102,7 +105,9 @@ class LoggerCallback(BaseCallback):
                            "Global/Exploration/Unique visits to all visits of agent #{}".format(agent_idx):
                            len(self.unique_states_by_agent[agent_idx])/self.all_states_by_agent[agent_idx],
                            "Global/Exploration/Unique visits to all states of env of agent #{}".format(agent_idx):
-                           len(self.unique_states_by_agent[agent_idx])/self.all_available_states}
+                           len(self.unique_states_by_agent[agent_idx])/self.all_available_states,
+                           "Metrics/Explored states":
+                           len(self.visited_states)/self.all_available_states}
                 if agent_idx == 0:
                     global_video_of_agent = np.stack(self.global_video_array[agent_idx])
                     logs["Video/Global video of train evaluation of agent #{}".format(agent_idx)] =\
@@ -129,6 +134,7 @@ class LoggerCallback(BaseCallback):
             self.episode_reward["intrinsic"][agent_idx] += int_rewards[agent_idx]
             self.episode_reward["extrinsic"][agent_idx] += ext_rewards[agent_idx]
             self.unique_states_by_agent[agent_idx].add(tuple(infos[agent_idx]["position"]))
+            self.visited_states.add(tuple(infos[agent_idx]["position"]))
             self.all_states_by_agent[agent_idx] += 1
             if agent_idx < self.logged_agents:
                 if self.log_local_obs:

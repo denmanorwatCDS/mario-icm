@@ -59,7 +59,6 @@ class intrinsic_A2C(A2C):
             # Clip the actions to avoid out of bound error
             if isinstance(self.action_space, spaces.Box):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
-
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             rewards, int_reward, ext_reward = self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, self.prev_dones)
             self.prev_dones = dones

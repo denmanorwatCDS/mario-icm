@@ -10,7 +10,7 @@ from gym.wrappers import GrayScaleObservation
 import gym
 
 grid_size = 15
-env = gym.make("MiniGrid-FourRoomsEnvLimited-v0", grid_size=grid_size)
+env = gym.make("MiniGrid-DoorKey-8x8-v0")
 env = RGBImgObsDirectionWrapper(env, grid_size, restriction=None)
 env = MovementActions(env)
 env = TimeLimit(env, 100)
