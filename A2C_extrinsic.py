@@ -32,7 +32,7 @@ def make_env(env_id, grid_size, rank, seed=0):
         env.seed(seed + rank)
         env = RGBImgObsDirectionWrapper(env, grid_size=grid_size, restriction=None)
         env = MovementActions(env)
-        env = TimeLimit(env, 1_000)
+        env = TimeLimit(env, 50)
         env = WarpFrame(env, width=42, height=42)
         return env
     set_random_seed(seed)
@@ -69,6 +69,7 @@ if __name__=="__main__":
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
     model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Minigrid A2C", 
                                                                      hyperparameters.HYPERPARAMS, global_counter = global_counter, 
-                                                                     num_agents = a2c_config.NUM_AGENTS, all_available_states=(grid_size-2)**2),
+                                                                     num_agents = a2c_config.NUM_AGENTS,
+                                                                     grid_size=grid_size, all_available_states=(grid_size-2)**2),
                                                       LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
                                                                          global_counter=global_counter)])

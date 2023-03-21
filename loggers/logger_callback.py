@@ -2,10 +2,12 @@ from stable_baselines3.common.callbacks import BaseCallback
 import torch
 import wandb
 import numpy as np
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 class LoggerCallback(BaseCallback):
     def __init__(self, log_freq, verbose, wandb_project_name, config, global_counter, num_agents, all_available_states,
-                  logged_agents = 3):
+                 grid_size, logged_agents = 3):
         super(LoggerCallback, self).__init__(verbose)
         self.wandb_project_name = wandb_project_name
         self.config = config
@@ -13,6 +15,7 @@ class LoggerCallback(BaseCallback):
         self.global_counter = global_counter
         self.log_freq = log_freq
         self.num_agents = num_agents
+        self.grid_size = grid_size
         self.all_available_states = all_available_states
 
 
@@ -28,7 +31,7 @@ class LoggerCallback(BaseCallback):
         self.agent_episode = [0 for i in range(self.num_agents)]
 
         # Exploration states
-        self.unique_states_by_agent = [set() for i in range(self.num_agents)]
+        self.unique_states_by_agent = [np.zeros((self.grid_size, self.grid_size)) for i in range(self.num_agents)]
         self.all_states_by_agent = [0 for i in range(self.num_agents)]
 
         # Mean statistics by state
@@ -44,6 +47,9 @@ class LoggerCallback(BaseCallback):
 
         # Visited states across learning
         self.visited_states = set()
+
+        # Probabilities of right actions
+        self.probabilities_of_right_action = []
 
     def log_sizes(self):
         print("Local video array: {}, {}".format(len(self.local_video_array), len(self.local_video_array[0])))
@@ -76,10 +82,11 @@ class LoggerCallback(BaseCallback):
             new_obs = torch.from_numpy(new_obs).to(torch.float32).to("cuda:0" if torch.cuda.is_available() else "cpu")
             old_obs = old_obs.to(torch.float32).to("cuda:0" if torch.cuda.is_available() else "cpu")
             probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
-            mean_probability_of_right_action = probabilities[torch.arange(0, target_actions.shape[-1]), target_actions].mean().item()
+            self.probabilities_of_right_action.append(probabilities[torch.arange(0, target_actions.shape[-1]), target_actions].mean().item())
         if self.global_counter.get_count()%self.log_freq==0 and self.global_counter.get_count()>0:
             wandb.log({"mean/train/raw/mean probability of right action from {} previous steps".format(self.log_freq): 
-                       np.mean(mean_probability_of_right_action)}, step = self.global_counter.get_count())
+                       np.mean(self.probabilities_of_right_action)}, step = self.global_counter.get_count())
+            self.probabilities_of_right_action = []
             mean_probability_of_right_action = []
 
 
@@ -101,14 +108,8 @@ class LoggerCallback(BaseCallback):
                 logs = {"Global/Rewards/Extrisnic reward per episode of agent #{}".format(agent_idx):
                            self.episode_reward["extrinsic"][agent_idx],
                            "Global/Rewards/Intrinsic reward per episode of agent #{}".format(agent_idx):
-                           self.episode_reward["intrinsic"][agent_idx],
-                           "Global/Exploration/Unique visits to all visits of agent #{}".format(agent_idx):
-                           len(self.unique_states_by_agent[agent_idx])/self.all_states_by_agent[agent_idx],
-                           "Global/Exploration/Unique visits to all states of env of agent #{}".format(agent_idx):
-                           len(self.unique_states_by_agent[agent_idx])/self.all_available_states,
-                           "Metrics/Explored states":
-                           len(self.visited_states)/self.all_available_states}
-                if agent_idx == 0:
+                           self.episode_reward["intrinsic"][agent_idx]}
+                if agent_idx == 0 and self.global_counter.get_count() % self.log_freq == 0:
                     global_video_of_agent = np.stack(self.global_video_array[agent_idx])
                     logs["Video/Global video of train evaluation of agent #{}".format(agent_idx)] =\
                         wandb.Video(global_video_of_agent, fps=10)
@@ -116,16 +117,25 @@ class LoggerCallback(BaseCallback):
                     local_video_of_agent = torch.stack(self.local_video_array[agent_idx]).detach().cpu().numpy()
                     logs["Video/Local video of train evaluation of agent #{}".format(agent_idx)] =\
                         wandb.Video(local_video_of_agent, fps=30)
-                wandb.log(logs, step = self.global_counter.get_count())
+                wandb.log(logs, step=self.global_counter.get_count())
             if train_dones[agent_idx]:
-                unique_visits_to_all_visits = len(self.unique_states_by_agent[agent_idx])/self.all_states_by_agent[agent_idx]
-                unique_visits_to_all_states = len(self.unique_states_by_agent[agent_idx])/self.all_available_states
+                self.nullify_globals(agent_idx)
+            if self.global_counter.get_count() % self.log_freq == 0 and self.global_counter.get_count() > 0:
+                logs["Global/Exploration/Unique visits to all visits of agent #{}".format(agent_idx)] = \
+                    (self.unique_states_by_agent[agent_idx]>0).sum()/self.unique_states_by_agent[agent_idx].sum()
+                print("Unique states by agent: {}".format(self.unique_states_by_agent[agent_idx].sum()))
+                logs["Global/Exploration/Unique visits to all states of env of agent #{}".format(agent_idx)] = \
+                    (self.unique_states_by_agent[agent_idx] > 0).sum() / self.all_available_states
+                print("All available states: {}".format(self.all_available_states))
+                unique_visits_to_all_visits = (self.unique_states_by_agent[agent_idx]>0).sum() / self.unique_states_by_agent[agent_idx].sum()
+                unique_visits_to_all_states = (self.unique_states_by_agent[agent_idx]>0).sum() / self.all_available_states
                 extrinsic_reward_per_episode = self.episode_reward["extrinsic"][agent_idx]
                 self.save_episode_info("Unique visits to all visits", agent_idx, unique_visits_to_all_visits)
                 self.save_episode_info("Unique visits to all states", agent_idx, unique_visits_to_all_states)
                 self.save_episode_info("Extrinsic reward", agent_idx, extrinsic_reward_per_episode)
+                wandb.log({"Metrics/Visited state": len(self.visited_states)/self.all_available_states}, step =self.global_counter.get_count())
                 self.log_episode_info_when_ready()
-                self.nullify_globals(agent_idx)
+                self.nullify_metrics(agent_idx)
         return True
 
 
@@ -133,9 +143,9 @@ class LoggerCallback(BaseCallback):
         for agent_idx in range(self.num_agents):
             self.episode_reward["intrinsic"][agent_idx] += int_rewards[agent_idx]
             self.episode_reward["extrinsic"][agent_idx] += ext_rewards[agent_idx]
-            self.unique_states_by_agent[agent_idx].add(tuple(infos[agent_idx]["position"]))
+            y_pos, x_pos = tuple(infos[agent_idx]["position"])
+            self.unique_states_by_agent[agent_idx][y_pos, x_pos] += 1
             self.visited_states.add(tuple(infos[agent_idx]["position"]))
-            self.all_states_by_agent[agent_idx] += 1
             if agent_idx < self.logged_agents:
                 if self.log_local_obs:
                     self.local_video_array[agent_idx].append(local_observations[agent_idx][-1:])
@@ -146,12 +156,13 @@ class LoggerCallback(BaseCallback):
     def nullify_globals(self, agent_idx):
         self.episode_reward["intrinsic"][agent_idx] = 0
         self.episode_reward["extrinsic"][agent_idx] = 0
-        self.unique_states_by_agent[agent_idx] = set()
-        self.all_states_by_agent[agent_idx] = 0
         if agent_idx < self.logged_agents:
             self.local_video_array[agent_idx] = []
             self.log_local_obs = False
             self.global_video_array[agent_idx] = []
+
+    def nullify_metrics(self, agent_idx):
+        self.unique_states_by_agent[agent_idx] = np.zeros((self.grid_size, self.grid_size))
 
 
     def save_episode_info(self, key, agent_idx, ratio):
@@ -181,6 +192,9 @@ class LoggerCallback(BaseCallback):
                     self.episode_statistics[key].append([None for i in range(self.num_agents)])
                 del self.episode_statistics[key][0]
                 print("Episode statictics length: {}".format(len(self.episode_statistics)))
+            print(np.mean(self.unique_states_by_agent, axis=0).shape)
+            sns.heatmap(np.mean(self.unique_states_by_agent, axis=0))
+            plt.savefig("tmp/Heatmap.png")
+            plt.clf()
+            wandb_log["Metrics/Heatmap"] = wandb.Image("tmp/Heatmap.png")
             wandb.log(wandb_log, step = self.global_counter.get_count())
-            
-
