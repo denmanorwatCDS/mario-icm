@@ -60,7 +60,8 @@ class intrinsic_A2C(A2C):
             if isinstance(self.action_space, spaces.Box):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
             new_obs, rewards, dones, infos = env.step(clipped_actions)
-            rewards, int_reward, ext_reward = self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, self.prev_dones)
+            rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward =\
+                self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, self.prev_dones)
             self.prev_dones = dones
 
             self.num_timesteps += env.num_envs
@@ -117,7 +118,7 @@ class intrinsic_A2C(A2C):
             int_reward = np.clip(int_reward, 0, 1)
             int_reward[prev_dones==True] = 0
             rewards = int_reward*self.intrinsic_reward_coef + ext_reward*(1-self.intrinsic_reward_coef)
-        return rewards, int_reward*self.intrinsic_reward_coef, ext_reward*(1-self.intrinsic_reward_coef)
+        return rewards, int_reward*self.intrinsic_reward_coef, ext_reward*(1-self.intrinsic_reward_coef), int_reward, ext_reward
 
     def save_batch_for_icm(self, obs, action, new_obs, prev_dones):
         relevant_obs = obs[prev_dones==False]

@@ -66,10 +66,11 @@ if __name__=="__main__":
                           use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
 
 
-    model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
-    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Minigrid A2C", 
-                                                                     hyperparameters.HYPERPARAMS, global_counter = global_counter, 
-                                                                     num_agents = a2c_config.NUM_AGENTS,
-                                                                     grid_size=grid_size, all_available_states=(grid_size-2)**2),
+    model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY/a2c_config.NUM_STEPS, None, "stdout", global_counter = global_counter))
+    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(0, "Minigrid report", hyperparameters.HYPERPARAMS,
+                                                                     global_counter = global_counter,
+                                                                     quantity_of_agents = a2c_config.NUM_AGENTS, grid_size=grid_size,  
+                                                                     log_frequency = log_config.AGENT_LOG_FREQUENCY,
+                                                                     video_submission_frequency=log_config.VIDEO_SUBMISSION_FREQUENCY),
                                                       LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
                                                                          global_counter=global_counter)])

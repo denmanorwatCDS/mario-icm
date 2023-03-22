@@ -5,7 +5,6 @@ import wandb
 class A2CLogger(Logger):
     def __init__(self, log_frequency, folder, output_formats, global_counter):
         super().__init__(folder, output_formats)
-        wandb.init(project = "Minigrid A2C")
         self.model_logs = {"train/entropy_loss": [], "train/policy_loss": [],
                            "train/value_loss": [], "train/final/icm_loss": [],
                            "train/final/forward_loss": [], "train/final/inverse_loss": [],
