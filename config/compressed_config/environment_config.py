@@ -26,7 +26,9 @@ ACTION_SKIP = 6
 FPS = 30
 
 # Device
-DEVICE = "cuda:0"
+MODEL_DEVICE = "cuda:0"
+MOTIVATION_DEVICE = "cuda:0"
+
 
 config_dict = {
     "SEED": SEED,

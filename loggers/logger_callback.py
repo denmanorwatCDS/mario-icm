@@ -59,6 +59,7 @@ class LoggerCallback(BaseCallback):
 
     def _on_training_start(self):
         wandb.init(project=self.wandb_project_name, config=self.config)
+        print(self.model.device)
 
     def log_array_as_heatmap(self, array, name, logs):
         heatmap = sns.heatmap(array)
@@ -85,11 +86,13 @@ class LoggerCallback(BaseCallback):
         current_time = time.perf_counter()
         if self.previous_time is not None:
             log["Performance/Step time"] = current_time-self.previous_time
+            log["Elapsed time"] = current_time-self.previous_time
         self.previous_time = current_time
 
     def update_estimated_probability_of_ground_truth(self, old_obs, new_obs, performed_actions):
         motivation_model = self.model.motivation_model
-        old_obs, new_obs = old_obs.to(torch.float32), new_obs.to(torch.float32)
+        old_obs, new_obs = (old_obs.to(torch.float32).to(self.model.motivation_device), 
+                            new_obs.to(torch.float32).to(self.model.motivation_device))
         predicted_probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
         self.step_characteristics["mean/train/raw/Estimated probability of ground truth action"].append(
             predicted_probabilities[torch.arange(0, performed_actions.shape[-1]), performed_actions].mean().item())
@@ -157,6 +160,7 @@ class LoggerCallback(BaseCallback):
             actions = np.zeros(image_grid_after_action.shape[0:2])+action
             impossible_cells = (np.roll(mask, shift=shift, axis=axes) | mask)
             with torch.no_grad():
+                print("Action device: {}".format(self.device))
                 flatten_image_grid, flatten_actions, flatten_new_image_grid =\
                     image_grid.flatten(0, 1).to(torch.float32).to(self.device), \
                     torch.from_numpy(actions).flatten(0, 1).to(self.device).to(torch.int64),\
@@ -178,7 +182,7 @@ class LoggerCallback(BaseCallback):
         mean_intrinsic_reward[mask]=float("nan")
         self.log_array_as_heatmap(mean_intrinsic_reward, "Mean intrinsic reward after moving to target cell", logs)
         with torch.no_grad():
-            values = policy.predict_values(image_grid.flatten(0, 1).to(self.device)).unflatten(0, (grid_size, grid_size)).squeeze()
+            values = policy.predict_values(image_grid.flatten(0, 1).to(self.model.device)).unflatten(0, (grid_size, grid_size)).squeeze()
             values[torch.from_numpy(mask)] = float("nan")
             values = values.cpu().numpy()
             self.log_array_as_heatmap(values, "Value of target cell", logs)

@@ -11,12 +11,13 @@ class intrinsic_A2C(A2C):
                  global_counter, learning_rate = 7e-4, n_steps = 5, gamma = 0.99, gae_lambda = 1.0, ent_coef = 0.0, vf_coef = 0.5,
                  max_grad_norm = 0.5, rms_prop_eps = 1e-5, use_rms_prop = True, use_sde = False, sde_sample_freq = -1, 
                  normalize_advantage = False, tensorboard_log = None, create_eval_env = False, policy_kwargs = None, verbose = 0, 
-                 seed = None, device = "auto", _init_setup_model = True):
+                 seed = None, device = "auto", motivation_device="cuda:0", _init_setup_model = True):
         super().__init__(policy, env, learning_rate, n_steps, gamma, gae_lambda, 
                        ent_coef, vf_coef, max_grad_norm, rms_prop_eps, use_rms_prop, use_sde, 
                        sde_sample_freq, normalize_advantage, tensorboard_log, create_eval_env, policy_kwargs, verbose, seed,
                        device, _init_setup_model,)
         self.motivation_model = motivation_model
+        self.motivation_device = motivation_device
         self.batch_for_icm = {"old obs": [], "action": [], "new obs": []}
         self.intrinsic_reward_coef = intrinsic_reward_coef
         self.warmup_steps = warmup_steps
@@ -33,7 +34,6 @@ class intrinsic_A2C(A2C):
         assert self._last_obs is not None, "No previous observation was provided"
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
-        self.prev_dones = np.full((env.num_envs), False)
 
         n_steps = 0
         rollout_buffer.reset()
@@ -60,9 +60,10 @@ class intrinsic_A2C(A2C):
             if isinstance(self.action_space, spaces.Box):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
             new_obs, rewards, dones, infos = env.step(clipped_actions)
+
+            # Vectorized wrapper, after issuing of done signal, automaticly reset env and generates new observation
             rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward =\
-                self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, self.prev_dones)
-            self.prev_dones = dones
+                self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, dones)
 
             self.num_timesteps += env.num_envs
 
@@ -104,10 +105,11 @@ class intrinsic_A2C(A2C):
         callback.on_rollout_end()
         return True
     
-    def calculate_new_reward(self, obs, action, new_obs, rewards, prev_dones):
-        new_obs = obs_as_tensor(new_obs, self.device)
-        obs, action, new_obs = obs.to(th.float), th.from_numpy(action).to(self.device), new_obs.to(th.float)
-        self.save_batch_for_icm(obs, action, new_obs, prev_dones)
+    def calculate_new_reward(self, obs, action, new_obs, rewards, dones):
+        new_obs = obs_as_tensor(new_obs, self.motivation_device)
+        obs, action, new_obs = (obs.to(th.float).to(self.motivation_device),
+            th.from_numpy(action).to(self.motivation_device), new_obs.to(th.float))
+        self.save_batch_for_icm(obs, action, new_obs, dones)
         int_reward = np.zeros(rewards.shape)
         ext_reward = rewards
         if self.global_counter.get_count() < self.warmup_steps:
@@ -116,14 +118,14 @@ class intrinsic_A2C(A2C):
         else:
             int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
             int_reward = np.clip(int_reward, 0, 1)
-            int_reward[prev_dones==True] = 0
+            int_reward[dones==True] = 0
             rewards = int_reward*self.intrinsic_reward_coef + ext_reward*(1-self.intrinsic_reward_coef)
         return rewards, int_reward*self.intrinsic_reward_coef, ext_reward*(1-self.intrinsic_reward_coef), int_reward, ext_reward
 
-    def save_batch_for_icm(self, obs, action, new_obs, prev_dones):
-        relevant_obs = obs[prev_dones==False]
-        relevant_action = action[prev_dones==False]
-        relevant_new_obs = new_obs[prev_dones==False]
+    def save_batch_for_icm(self, obs, action, new_obs, dones):
+        relevant_obs = obs[dones==False]
+        relevant_action = action[dones==False]
+        relevant_new_obs = new_obs[dones==False]
         self.batch_for_icm["old obs"].append(relevant_obs)
         self.batch_for_icm["action"].append(relevant_action)
         self.batch_for_icm["new obs"].append(relevant_new_obs)

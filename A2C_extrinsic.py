@@ -49,7 +49,7 @@ if __name__=="__main__":
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, 
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA, 
               feature_map_qty=icm_config.FMAP_QTY)\
-                .to(environment_config.DEVICE)
+                .to(environment_config.MOTIVATION_DEVICE)
 
     # Eval and train environments
     env = SubprocVecEnv([make_env(env_id, grid_size, i) for i in range(parallel_envs)], start_method="forkserver")
@@ -63,7 +63,8 @@ if __name__=="__main__":
                           warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=a2c_config.LR, 
                           n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
                           ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF, max_grad_norm=a2c_config.MAX_GRAD_NORM, 
-                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
+                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED,
+                          device=environment_config.MODEL_DEVICE, motivation_device=environment_config.MOTIVATION_DEVICE)
 
 
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY/a2c_config.NUM_STEPS, None, "stdout", global_counter = global_counter))
@@ -72,4 +73,4 @@ if __name__=="__main__":
                                                                      quantity_of_agents = a2c_config.NUM_AGENTS, grid_size=grid_size,  
                                                                      log_frequency = log_config.AGENT_LOG_FREQUENCY,
                                                                      video_submission_frequency=log_config.VIDEO_SUBMISSION_FREQUENCY,
-                                                                     device=environment_config.DEVICE)])
+                                                                     device=environment_config.MOTIVATION_DEVICE)])
