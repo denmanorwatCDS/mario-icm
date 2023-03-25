@@ -2,125 +2,153 @@ from stable_baselines3.common.callbacks import BaseCallback
 import torch
 import wandb
 import numpy as np
+import torch
+from matplotlib import pyplot as plt
+import time
+import pickle
 from torchvision.transforms import Grayscale
 
+
 class LoggerCallback(BaseCallback):
-    def __init__(self, log_freq, verbose, wandb_project_name, config, global_counter, num_agents, logged_agents = 3):
+    def __init__(self, verbose, wandb_project_name, config, global_counter, quantity_of_agents, device,
+                 log_frequency=500, video_submission_frequency=10, fps=30):
         super(LoggerCallback, self).__init__(verbose)
         self.wandb_project_name = wandb_project_name
         self.config = config
-        self.logged_agents = logged_agents
         self.global_counter = global_counter
-        self.log_freq = log_freq
-        self.num_agents = num_agents
+        self.log_frequency = log_frequency
+        self.video_submission_frequency = video_submission_frequency
+        self.quantity_of_agents = quantity_of_agents
+        self.device = device
+        self.fps = fps
+        self.gray = Grayscale(1)
 
+        # Theese are calculated on each step
+        self.step_characteristics = {"Media/Agent #0 observations": [],
+                                     "Media/Environment state of agent #0": [],
+                                     "mean/train/raw/Estimated probability of ground truth action": [],
+                                     "Raw/Intrinsic reward of agent #0": [], "Raw/Extrinsic reward of agent #0": [],
+                                     "Mix/Intrinsic reward of agent #0": [], "Mix/Extrinsic reward of agent #0": [],
+                                     "Mix/Total reward of agent #0": [],
+                                     "Raw/Intrinsic reward": [], "Raw/Extrinsic reward": [],
+                                     "Raw/Mean episode steps of agent #0": [], "Raw/Mean episode steps": [],
+                                     "Mix/Intrinsic reward": [], "Mix/Extrinsic reward": [],
+                                     "Mix/Total reward": []}
+
+        # Simple characteristics - this characteristics can be logged after mean operation
+        self.simple_characteristics = ["Raw/Intrinsic reward of agent #0", "Raw/Extrinsic reward of agent #0",
+                                       "Mix/Intrinsic reward of agent #0", "Mix/Extrinsic reward of agent #0",
+                                       "Mix/Total reward of agent #0",
+                                       "mean/train/raw/Estimated probability of ground truth action",
+                                       "Raw/Intrinsic reward", "Raw/Extrinsic reward",
+                                       "Raw/Mean episode steps of agent #0", "Raw/Mean episode steps",
+                                       "Mix/Intrinsic reward", "Mix/Extrinsic reward", "Mix/Total reward"]
+        # Videos array
+        self.video_names = ["Media/Agent #0 observations", "Media/Environment state of agent #0"]
+        self.fully_observable_frames = []
+        self.episode_of_agent_0_counter = 0
+
+        # Probability of performing ground truth action
+        self.mean_probabilites_from_step = []
+
+        # Set of all visited states through train
+        self.all_visited_states = set()
+
+        # Previous time
+        self.previous_time = None
+
+        # Episode lengths
+        self.episode_lengths = np.zeros(self.quantity_of_agents)
 
     def _on_training_start(self):
-        wandb.init(project = self.wandb_project_name, config=self.config)
-        # Global stats
-        self.video_array = [[] for i in range(self.logged_agents)]
-        self.episode_reward = {"extrinsic": [0 for i in range(self.num_agents)], 
-                               "intrinsic": [0 for i in range(self.num_agents)]}
-        # Local stats
-        self.local_mean_reward = {"intrinsic": [], "extrinsic": []}
-        self.local_prob_of_right_action = []
-        self.agent_episode = [0 for i in range(self.num_agents)]
-        # Mean vest findings
-        self.closest_empty_cell_by_agent = np.zeros(self.num_agents)
-        self.episode_to_agent_to_vest = [[None for i in range(self.num_agents)]]
-        
+        wandb.init(project=self.wandb_project_name, config=self.config)
+        print(self.model.device)
 
-    def _log_local(self, ext_reward, int_reward):
-        self.local_mean_reward["intrinsic"].append(int_reward)
-        self.local_mean_reward["extrinsic"].append(ext_reward)
-        self.log_probabilities(self.model.motivation_model, self.locals["obs_tensor"], self.locals["new_obs"], self.locals["clipped_actions"])
-        if self.global_counter.get_count()%self.log_freq==0 and self.global_counter.get_count()>0:
-            mean_agent_reward_int = np.array(self.local_mean_reward["intrinsic"])
-            mean_agent_reward_ext = np.array(self.local_mean_reward["extrinsic"])
-            for agent in range(self.logged_agents):
-                wandb.log({"Dynamics/Mean intrinsic reward from {} previous steps. Agent #{}".format(self.log_freq, agent): 
-                           np.mean(mean_agent_reward_int[:, agent]),
-                           "Dynamics/Mean extrinsic reward from {} previous steps. Agent #{}".format(self.log_freq, agent):
-                           np.mean(mean_agent_reward_ext[:, agent])}, step = self.global_counter.get_count())
-            self.local_mean_reward["intrinsic"] = []
-            self.local_mean_reward["extrinsic"] = []
+    def log_timer(self, log):
+        current_time = time.perf_counter()
+        if self.previous_time is not None:
+            log["Performance/Step time"] = current_time - self.previous_time
+            log["Elapsed time"] = current_time - self.previous_time
+        self.previous_time = current_time
 
+    def update_estimated_probability_of_ground_truth(self, old_obs, new_obs, performed_actions):
+        motivation_model = self.model.motivation_model
+        old_obs, new_obs = (old_obs.to(torch.float32).to(self.model.motivation_device),
+                            new_obs.to(torch.float32).to(self.model.motivation_device))
+        predicted_probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
+        self.step_characteristics["mean/train/raw/Estimated probability of ground truth action"].append(
+            predicted_probabilities[torch.arange(0, performed_actions.shape[-1]), performed_actions].mean().item())
 
-    def log_probabilities(self, motivation_model, old_obs, new_obs, target_actions):
-        with torch.no_grad():
-            new_obs = torch.from_numpy(new_obs).to(torch.float32).to("cuda:0" if torch.cuda.is_available() else "cpu")
-            old_obs = old_obs.to(torch.float32).to("cuda:0" if torch.cuda.is_available() else "cpu")
-            probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
-            mean_probability_of_right_action = probabilities[torch.arange(0, target_actions.shape[-1]), target_actions].mean().item()
-        self.local_prob_of_right_action.append(mean_probability_of_right_action)
-        if self.global_counter.get_count()%self.log_freq==0 and self.global_counter.get_count()>0:
-            wandb.log({"mean/train/raw/mean probability of right action from {} previous steps".format(self.log_freq): 
-                       np.mean(mean_probability_of_right_action)}, step = self.global_counter.get_count())
-            mean_probability_of_right_action = []
+    def update_mean_episode_length(self, dones):
+        self.episode_lengths[dones==0] += 1
+        for episode_length in self.episode_lengths[dones==1]:
+            self.step_characteristics["Raw/Mean episode steps"].append(self.episode_lengths)
+        if dones[0] == 1:
+            self.step_characteristics["Raw/Mean episode steps of agent #0"].append(self.episode_lengths[0])
+        self.episode_lengths[dones==1] = 0
 
+    def append_characteristrics(self, **kwargs):
+        for statistic, value in kwargs.items():
+            self.step_characteristics[statistic].append(value)
+
+    def process_mean_characteristics(self, log):
+        for simple_characteristic in self.simple_characteristics:
+            log[simple_characteristic] = np.mean(self.step_characteristics[simple_characteristic])
+            self.step_characteristics[simple_characteristic] = []
+
+    def log_video_if_ready(self, env_state, done, agent_obs=None):
+        logs = {}
+        frame = self.gray(env_state[0, :3])
+        self.step_characteristics["Media/Environment state of agent #0"].append(frame.cpu())
+        if agent_obs is not None:
+            self.step_characteristics["Media/Agent #0 observations"].append(agent_obs.cpu()[0][-1:])
+        if done:
+            for name in self.video_names:
+                if self.episode_of_agent_0_counter % self.video_submission_frequency == 0:
+                    if len(self.step_characteristics[name]) > 0:
+                        video = np.stack(self.step_characteristics[name])
+                        if name == "Media/Environment state of agent #0":
+                            logs[name] = wandb.Video(video, fps=self.fps)
+                        else:
+                            logs[name] = wandb.Video(video)
+                self.step_characteristics[name] = []
+            self.episode_of_agent_0_counter += 1
+        if len(logs) > 0:
+            wandb.log(logs, step=self.global_counter.get_count())
 
     def _on_step(self):
+        # Gather logging info
         self.global_counter.count()
-        int_rewards = self.locals["int_reward"]
-        ext_rewards = self.locals["ext_reward"]
-        self._log_local(ext_rewards, int_rewards)
-        
-        observations = self.locals["obs_tensor"][:self.logged_agents]
-        train_dones = self.locals["dones"]
-        infos = self.locals["infos"]
-        self.update_globals(observations, int_rewards, ext_rewards)
-        
+        raw_int_rewards, raw_ext_rewards = self.locals["raw_int_reward"], self.locals["raw_ext_reward"]
+        int_rewards, ext_rewards = self.locals["int_reward"], self.locals["ext_reward"]
+        total_rewards = int_rewards + ext_rewards
+        raw_int_reward_agent_0, raw_ext_reward_agent_0 = raw_int_rewards[0], raw_ext_rewards[0]
+        int_reward_agent_0, ext_reward_agent_0 = int_rewards[0], ext_rewards[0]
+        total_reward_agent_0 = total_rewards[0]
+        reward_info = {"Raw/Intrinsic reward of agent #0": raw_int_reward_agent_0,
+                       "Raw/Extrinsic reward of agent #0": raw_ext_reward_agent_0,
+                       "Mix/Intrinsic reward of agent #0": int_reward_agent_0,
+                       "Mix/Extrinsic reward of agent #0": ext_reward_agent_0,
+                       "Mix/Total reward of agent #0": total_reward_agent_0,
+                       "Raw/Intrinsic reward": raw_int_rewards.mean(), "Raw/Extrinsic reward": raw_ext_rewards.mean(),
+                       "Mix/Intrinsic reward": int_rewards.mean(), "Mix/Extrinsic reward": ext_rewards.mean(),
+                       "Mix/Total reward": total_rewards.mean()}
+        self.append_characteristrics(**reward_info)
 
-        for agent_idx in range(self.num_agents):
-            if train_dones[agent_idx]:
-                found_vest = self.episode_reward["extrinsic"]
-                self.update_found_vest(agent_idx, found_vest)
-            if train_dones[agent_idx] and agent_idx < self.logged_agents:
-                video_of_agent = torch.stack(self.video_array[agent_idx]).detach().cpu().numpy()
-                wandb.log({"Global/Target/Agent #{} found vest ".format(agent_idx):
-                           found_vest,
-                           "Global/Rewards/Intrinsic reward per episode of agent #{}".format(agent_idx):
-                           self.episode_reward["intrinsic"][agent_idx],
-                           "Global/Rewards/Extrinsic reward per episode of agent #{}".format(agent_idx):
-                           self.episode_reward["extrinsic"][agent_idx],
-                           "Global/Target/Total_reward of agent #{}".format(agent_idx):
-                           self.episode_reward["intrinsic"][agent_idx] + self.episode_reward["extrinsic"][agent_idx],
-                           "Video/Video of train evaluation of agent #{}".format(agent_idx): 
-                           wandb.Video(video_of_agent, fps=30)},
-                           step = self.global_counter.get_count())
-            if train_dones[agent_idx]:
-                self.nullify_globals(agent_idx)
-        return True
+        previous_observation, current_observation = \
+            self.locals["obs_tensor"], \
+                torch.as_tensor(self.locals["new_obs"]).to(self.device)
+        actions = self.locals["clipped_actions"]
+        self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
 
+        done = self.locals["dones"][0]
+        self.log_video_if_ready(previous_observation, done, None)
 
-    def update_found_vest(self, agent, found_vest):
-        closest_empty_cell = int(self.closest_empty_cell_by_agent[agent])
-        self.closest_empty_cell_by_agent[agent] += 1
-        self.episode_to_agent_to_vest[closest_empty_cell][agent] = found_vest
-        if len(self.episode_to_agent_to_vest) == self.closest_empty_cell_by_agent[agent]:
-            self.episode_to_agent_to_vest.append([None for i in range(self.num_agents)])
-        lower_layer_filled = True
-        for agent_found_vest in self.episode_to_agent_to_vest[0]:
-            if agent_found_vest is None:
-                lower_layer_filled = False
-                break
-        if lower_layer_filled:
-            mean_of_findings = np.array(self.episode_to_agent_to_vest[0]).mean()
-            del self.episode_to_agent_to_vest[0]
-            self.closest_empty_cell_by_agent -= 1
-            wandb.log({"Global/Target/Mean of findings of vest": mean_of_findings}, step = self.global_counter.get_count())
-        
+        dones = self.locals["dones"]
+        self.update_mean_episode_length(dones)
 
-    def update_globals(self, observations, int_rewards, ext_rewards):
-        for agent_idx in range(self.num_agents):
-            self.episode_reward["intrinsic"][agent_idx] += int_rewards[agent_idx]
-            self.episode_reward["extrinsic"][agent_idx] += ext_rewards[agent_idx]
-            if agent_idx < self.logged_agents:
-                self.video_array[agent_idx].append(observations[agent_idx][-1:])
-
-
-    def nullify_globals(self, agent_idx):
-        self.episode_reward["intrinsic"][agent_idx] = 0
-        self.episode_reward["extrinsic"][agent_idx] = 0
-        if agent_idx < self.logged_agents:
-            self.video_array[agent_idx] = []
+        if self.global_counter.get_count() % self.log_frequency == 0 and self.global_counter.get_count() > 0:
+            log = {}
+            self.process_mean_characteristics(log)
+            self.log_timer(log)
+            wandb.log(log, step=self.global_counter.get_count())

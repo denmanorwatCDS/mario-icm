@@ -1,9 +1,9 @@
 #Config cell
-SEED = 1
+SEED = 100
 
 ALL_ACTION_SPACE = [['NOOP'],
     ['right'], ['right', 'A'], ['right', 'B'], ['right', 'A', 'B'],
-    ['A'], 
+    ['A'],
     ['left'], ['left', 'A'], ['left', 'B'], ['left', 'A', 'B'],
     ['down'],
     ['up']]
@@ -24,6 +24,11 @@ ACTION_SKIP = 6
 
 # FPS of submitted video
 FPS = 30
+
+# Device
+MODEL_DEVICE = "cuda:0"
+MOTIVATION_DEVICE = "cuda:0"
+
 
 config_dict = {
     "SEED": SEED,

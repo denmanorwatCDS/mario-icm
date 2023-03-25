@@ -4,10 +4,7 @@ import random
 import gym
 import os
 import vizdoom
-from vizdoom import gym_wrapper
 from stable_baselines3.common.atari_wrappers import WarpFrame
-from stable_baselines3.common.vec_env import SubprocVecEnv
-from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.utils import set_random_seed
 from loggers.logger_callback import LoggerCallback
 from loggers.eval_callback import LoggerEvalCallback
@@ -49,8 +46,9 @@ if __name__=="__main__":
 
     # Eval and train environments
     env = envpool.make(envpool_env_id, env_type="gym", num_envs=parallel_envs, seed=environment_config.SEED,
-                       img_height = environment_config.RESIZED_SIZE[0], img_width = environment_config.RESIZED_SIZE[1],
-                       stack_num=4, frame_skip=4, use_combined_action=True, 
+                       img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
+                       stack_num=environment_config.TEMPORAL_CHANNELS, frame_skip=environment_config.ACTION_SKIP,
+                       use_combined_action=True,
                        cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
                        wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad",
                        reward_config={"ARMOR": [0.01, 0.]})
@@ -59,7 +57,8 @@ if __name__=="__main__":
 
     eval_env = envpool.make(envpool_env_id, env_type="gym", num_envs=1, seed=environment_config.SEED+256,
                        img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
-                       stack_num=4, frame_skip=4, use_combined_action=True,
+                       stack_num=environment_config.TEMPORAL_CHANNELS, frame_skip=environment_config.ACTION_SKIP,
+                       use_combined_action=True,
                        cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
                        wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad")
     eval_env.spec.id = envpool_env_id
@@ -79,12 +78,15 @@ if __name__=="__main__":
                           warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=a2c_config.LR, 
                           n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
                           ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF, max_grad_norm=a2c_config.MAX_GRAD_NORM, 
-                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED)
+                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED,
+                          device=environment_config.MODEL_DEVICE, motivation_device=environment_config.MOTIVATION_DEVICE)
 
 
-    model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY, None, "stdout", global_counter = global_counter))
-    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(log_config.AGENT_LOG_FREQUENCY, 0, "Doom A2C", 
-                                                                     hyperparameters.HYPERPARAMS, global_counter = global_counter, 
-                                                                     num_agents = a2c_config.NUM_AGENTS), 
-                                                      LoggerEvalCallback(eval_env=eval_env, eval_freq=20_000, 
-                                                                         global_counter=global_counter)])
+    model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY/a2c_config.NUM_STEPS, None, "stdout", global_counter = global_counter))
+    model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(0, "Doom report", hyperparameters.HYPERPARAMS,
+                                                                     global_counter = global_counter,
+                                                                     quantity_of_agents = a2c_config.NUM_AGENTS,
+                                                                     log_frequency = log_config.AGENT_LOG_FREQUENCY,
+                                                                     video_submission_frequency=log_config.VIDEO_SUBMISSION_FREQUENCY,
+                                                                     device=environment_config.MOTIVATION_DEVICE,
+                                                                     fps=environment_config.FPS)])
