@@ -4,7 +4,6 @@ LOSS_LOG_FREQUENCY = 2_000
 # Interval in which average env data for further wandb logging
 AGENT_LOG_FREQUENCY = 2_000
 
-#
 VIDEO_SUBMISSION_FREQUENCY = 40
 # Video FPS
 fps = 30

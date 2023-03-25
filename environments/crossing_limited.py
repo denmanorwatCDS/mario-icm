@@ -3,6 +3,7 @@ from gym_minigrid.register import register
 from gym_minigrid.minigrid import Grid, Goal
 from gym_minigrid.minigrid import MiniGridEnv
 from gym_minigrid.minigrid import Lava
+import numpy as np
 
 class FourRoomsEnvLimited(FourRoomsEnv):
     """
@@ -13,9 +14,9 @@ class FourRoomsEnvLimited(FourRoomsEnv):
     def __init__(self, grid_size, agent_pos=None, goal_pos=None):
         self._agent_default_pos = agent_pos
         self._goal_default_pos = goal_pos
-        self.holes = [[None, None],
-                      [None, None]]
+
         super(FourRoomsEnv, self).__init__(grid_size=grid_size, max_steps=5_000)
+        self.map = np.array(self.grid.encode())[:, :, 0]
 
     def _gen_grid(self, width, height):
         # Create the grid

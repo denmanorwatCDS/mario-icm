@@ -6,9 +6,11 @@ import torch
 import seaborn as sns
 from matplotlib import pyplot as plt
 import time
+import pickle
+from scipy.stats import entropy
 
 class LoggerCallback(BaseCallback):
-    def __init__(self, verbose, wandb_project_name, config, global_counter, quantity_of_agents, grid_size,
+    def __init__(self, verbose, wandb_project_name, config, global_counter, quantity_of_agents, grid_size, device,
                  log_frequency=500, video_submission_frequency=10):
         super(LoggerCallback, self).__init__(verbose)
         self.wandb_project_name = wandb_project_name
@@ -18,6 +20,7 @@ class LoggerCallback(BaseCallback):
         self.video_submission_frequency = video_submission_frequency
         self.quantity_of_agents = quantity_of_agents
         self.grid_size = grid_size
+        self.device = device
 
         # Theese are calculated on each step
         self.step_characteristics = {"Media/Agent #0 observations": [],
@@ -34,7 +37,9 @@ class LoggerCallback(BaseCallback):
         # Simple characteristics - this characteristics can be logged after mean operation
         self.simple_characteristics = ["Raw/Intrinsic reward of agent #0", "Raw/Extrinsic reward of agent #0",
                                        "Mix/Intrinsic reward of agent #0", "Mix/Extrinsic reward of agent #0",
-                                       "Mix/Total reward of agent #0", "mean/train/raw/Estimated probability of ground truth action"]
+                                       "Mix/Total reward of agent #0", "mean/train/raw/Estimated probability of ground truth action",
+                                       "Raw/Intrinsic reward", "Raw/Extrinsic reward",
+                                       "Mix/Intrinsic reward", "Mix/Extrinsic reward", "Mix/Total reward"]
         # Videos array
         self.sanity_checked = False
         self.video_names = ["Media/Agent #0 observations", "Media/Environment state of agent #0"]
@@ -55,6 +60,19 @@ class LoggerCallback(BaseCallback):
     def _on_training_start(self):
         wandb.init(project=self.wandb_project_name, config=self.config)
 
+    def log_array_as_heatmap(self, array, name, logs):
+        heatmap = sns.heatmap(array)
+        heatmap.set_facecolor("green")
+        plt.savefig("tmp/"+name+".png")
+        plt.clf()
+        logs["Media/"+name] = wandb.Image("tmp/"+name+".png")
+
+    def get_image_grid_and_mask(self):
+        with open("tmp/image_array.pkl", "rb") as file:
+            unpickled_data = pickle.load(file)
+            mask, image_grid = unpickled_data["mask"], unpickled_data["image_grid"]
+            image_grid = torch.from_numpy(image_grid).permute(0, 1, 4, 2, 3)
+        return image_grid, mask
 
     def update_heatmap(self, x_positions, y_positions):
         i=0
@@ -87,22 +105,20 @@ class LoggerCallback(BaseCallback):
             log[simple_characteristic] = np.mean(self.step_characteristics[simple_characteristic])
             self.step_characteristics[simple_characteristic] = []
 
-
     def process_heatmap(self, logs):
+        visitations = np.array(self.step_characteristics["Media/Heatmap"])
+        mean_unique_visited_states = (visitations>0).sum(axis=(1, 2)).mean()
+        mean_entropy_of_all_states = entropy(visitations.reshape((-1, self.quantity_of_agents))).mean()
         average_heatmap = np.mean(self.step_characteristics["Media/Heatmap"], axis=0)
-        unique_visited_states = (average_heatmap>0).sum()
         all_states = average_heatmap.shape[0]*average_heatmap.shape[1]
         mean_steps = average_heatmap.sum()
-        logs["Metrics/States visited by at least one agent to all states"] = unique_visited_states/all_states
-        logs["Metrics/States visited by at least one agent to mean episode length"] = unique_visited_states/mean_steps
+        logs["Metrics/Mean unique visited states to all states"] = mean_unique_visited_states/all_states
+        logs["Metrics/Mean unique visited states to mean episode length"] = mean_unique_visited_states/mean_steps
+        logs["Metrics/Mean entropy"] = mean_entropy_of_all_states
         logs["Metrics/All visited by now states (through training)"] = len(self.all_visited_states)
-        sns.heatmap(average_heatmap)
-        plt.savefig("tmp/Heatmap.png")
-        plt.clf()
-        logs["Media/Heatmap"] = wandb.Image("tmp/Heatmap.png")
+        self.log_array_as_heatmap(average_heatmap, "Visitation heatmap", logs)
         self.step_characteristics["Media/Heatmap"] =\
             [np.zeros((self.grid_size, self.grid_size)) for i in range(self.quantity_of_agents)]
-
 
     def log_video_if_ready(self, env_state, done, agent_obs = None):
         logs = {}
@@ -122,6 +138,50 @@ class LoggerCallback(BaseCallback):
             self.episode_of_agent_0_counter += 1
         if len(logs)>0:
             wandb.log(logs, step=self.global_counter.get_count())
+
+
+    def evaluate_values_and_rewards(self, logs):
+        # Prepare models
+        ACTIONS, AXES, SHIFTS, ACTION_NAMES = [0, 1, 2, 3], [1, 0, 1, 0], [1, 1, -1, -1], ["right", "down", "left", "up"]
+
+        motivation_model, policy = self.model.motivation_model, self.model.policy
+        # From all available positions of agent generate new positions that corresponds to exectuion of action
+        # Nullify impossible positions (for example, it is impossible to be on the left of the wall after moving right)
+        image_grid, mask = self.get_image_grid_and_mask()
+        grid_size = image_grid.shape[0]
+        mean_intrinsic_reward, quantity_of_actions_leading_to_cell =\
+            np.zeros((grid_size, grid_size)), np.zeros((grid_size, grid_size))
+
+        for action, axes, shift, name in zip(ACTIONS, AXES, SHIFTS, ACTION_NAMES):
+            image_grid_after_action = np.roll(image_grid, shift=shift, axis=axes)
+            actions = np.zeros(image_grid_after_action.shape[0:2])+action
+            impossible_cells = (np.roll(mask, shift=shift, axis=axes) | mask)
+            with torch.no_grad():
+                flatten_image_grid, flatten_actions, flatten_new_image_grid =\
+                    image_grid.flatten(0, 1).to(torch.float32).to(self.device), \
+                    torch.from_numpy(actions).flatten(0, 1).to(self.device).to(torch.int64),\
+                    torch.from_numpy(image_grid_after_action).flatten(0, 1).to(torch.float32).to(self.device)
+                intrinsic_rewards =\
+                    motivation_model.intrinsic_reward(flatten_image_grid, flatten_actions, flatten_new_image_grid)
+                matrix_of_intrinsic_rewards = intrinsic_rewards.reshape((grid_size, grid_size))
+                print(matrix_of_intrinsic_rewards.shape)
+                matrix_of_intrinsic_rewards[impossible_cells] = 0
+                mean_intrinsic_reward += matrix_of_intrinsic_rewards
+                matrix_of_intrinsic_rewards[impossible_cells] = float("nan")
+                self.log_array_as_heatmap(matrix_of_intrinsic_rewards,
+                                          "Intrinsic reward after moving "+name+" to target cell", logs)
+
+                quantity_of_actions_leading_to_cell += (impossible_cells==0)
+
+        quantity_of_actions_leading_to_cell += 0.001 # For numerical stability
+        mean_intrinsic_reward = mean_intrinsic_reward/quantity_of_actions_leading_to_cell
+        mean_intrinsic_reward[mask]=float("nan")
+        self.log_array_as_heatmap(mean_intrinsic_reward, "Mean intrinsic reward after moving to target cell", logs)
+        with torch.no_grad():
+            values = policy.predict_values(image_grid.flatten(0, 1).to(self.device)).unflatten(0, (grid_size, grid_size)).squeeze()
+            values[torch.from_numpy(mask)] = float("nan")
+            values = values.cpu().numpy()
+            self.log_array_as_heatmap(values, "Value of target cell", logs)
 
 
     def _on_step(self):
@@ -145,7 +205,7 @@ class LoggerCallback(BaseCallback):
 
         previous_observation, current_observation, current_environment_state =\
             self.locals["obs_tensor"],\
-            torch.as_tensor(self.locals["new_obs"]).to("cuda:0" if torch.cuda.is_available() else "cpu"), \
+            torch.as_tensor(self.locals["new_obs"]).to(self.device), \
             self.locals["infos"][0]["full_img"]
         actions = self.locals["clipped_actions"]
         self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
@@ -166,4 +226,5 @@ class LoggerCallback(BaseCallback):
             self.process_mean_characteristics(log)
             self.process_heatmap(log)
             self.log_timer(log)
+            self.evaluate_values_and_rewards(log)
             wandb.log(log, step=self.global_counter.get_count())

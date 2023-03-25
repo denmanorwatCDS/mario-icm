@@ -1,5 +1,5 @@
 #Config cell
-SEED = 1
+SEED = 100
 
 ALL_ACTION_SPACE = [['NOOP'],
     ['right'], ['right', 'A'], ['right', 'B'], ['right', 'A', 'B'],
@@ -17,13 +17,16 @@ ACTION_SPACE_SIZE = len(ALL_ACTION_SPACE)
 RESIZED_SIZE = (42, 42)
 
 # Temporal channels quantity
-TEMPORAL_CHANNELS = 4 #4
+TEMPORAL_CHANNELS = 1 #4
 
 # Action skip
 ACTION_SKIP = 6
 
 # FPS of submitted video
 FPS = 30
+
+# Device
+DEVICE = "cuda:0"
 
 config_dict = {
     "SEED": SEED,

@@ -40,14 +40,17 @@ class RGBImgObsDirectionWrapper(RGBImgObsWrapper):
         current_position = self.unwrapped.agent_pos
         rgb_img = super().observation(obs)['image']
         self.full_image = rgb_img[..., 0:1]*0.2989 + rgb_img[..., 1:2]*0.5870 + 0.1140*rgb_img[..., 2:]
+        current_x, current_y = current_position[0], current_position[1]
         if self.restriction is not None:
-            current_x, current_y = current_position[0], current_position[1]
             min_x = max(0, (current_x-self.restriction)*self.tile_size)
             max_x = min((current_x+self.restriction+1)*self.tile_size, self.grid_size*self.tile_size)
             min_y = max(0, (current_y-self.restriction)*self.tile_size)
             max_y = min((current_y+self.restriction+1)*self.tile_size, self.grid_size*self.tile_size)
             rgb_img = rgb_img[min_y: max_y, min_x: max_x]
             rgb_img = self.center_image_at_agent(rgb_img, current_x, current_y)
+        else:
+            rgb_img[current_y*self.tile_size+1: (current_y+1)*self.tile_size,
+                    current_x*self.tile_size+1: (current_x+1)*self.tile_size] = 240
 
         return {
             'mission': obs['mission'],
@@ -72,3 +75,5 @@ class RGBImgObsDirectionWrapper(RGBImgObsWrapper):
             centered_rgb_image[self.restriction*self.tile_size+1: (self.restriction+1)*self.tile_size, 
                                self.restriction*self.tile_size+1: (self.restriction+1)*self.tile_size] = 240
         return centered_rgb_image
+
+
