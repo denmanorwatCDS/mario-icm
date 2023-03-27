@@ -30,6 +30,7 @@ class intrinsic_A2C(A2C):
         self.warmup_steps = warmup_steps
         self.global_counter = global_counter
         self.motivation_grad_norm = motivation_grad_norm
+        self.step_counter = np.zeros(self.env.num_envs)
         if use_rms_prop and "optimizer_class" not in self.policy_kwargs:
             self.model_optimizer = th.optim.RMSprop(params=motivation_model.parameters(),
                                                     alpha=0.99, eps=rms_prop_eps, weight_decay=0, lr=motivation_lr)
@@ -85,6 +86,16 @@ class intrinsic_A2C(A2C):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
+            self.debug(dones, rewards)
+            # Reset doom reward
+            rewards[0:] = 0
+            rewards[dones & (self.step_counter<525)] = 1
+            if dones.any():
+                print("Dones: {}".format(dones))
+                print("Step counter: {}".format(self.step_counter))
+                print("Rewards: {}".format(rewards))
+            self.step_counter[dones]=0
+            
 
             rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward =\
                 self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, dones)
@@ -190,3 +201,9 @@ class intrinsic_A2C(A2C):
             total_norm += param_norm.item() ** 2
         total_norm = total_norm ** 0.5
         return total_norm
+    
+    def debug(self, dones, rewards):
+        self.step_counter += 1
+        if (rewards>1).any():
+            print("Step number: {}, global steps: {}".format(self.step_counter, self.global_counter.get_count()))
+            print("Dones: {}, Rewards: {}".format(dones, rewards))

@@ -82,7 +82,7 @@ class LoggerCallback(BaseCallback):
     def update_mean_episode_length(self, dones):
         self.episode_lengths[dones==0] += 1
         for episode_length in self.episode_lengths[dones==1]:
-            self.step_characteristics["Raw/Mean episode steps"].append(self.episode_lengths)
+            self.step_characteristics["Raw/Mean episode steps"].append(episode_length)
         if dones[0] == 1:
             self.step_characteristics["Raw/Mean episode steps of agent #0"].append(self.episode_lengths[0])
         self.episode_lengths[dones==1] = 0
@@ -93,6 +93,9 @@ class LoggerCallback(BaseCallback):
 
     def process_mean_characteristics(self, log):
         for simple_characteristic in self.simple_characteristics:
+            print(simple_characteristic)
+            if simple_characteristic == "Raw/Mean episode steps":
+                print(self.step_characteristics[simple_characteristic])
             log[simple_characteristic] = np.mean(self.step_characteristics[simple_characteristic])
             self.step_characteristics[simple_characteristic] = []
 

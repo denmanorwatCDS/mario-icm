@@ -23,11 +23,11 @@ GAE_LAMBDA = 1.
 
 # Entropy coef
 # SB3; Was 0.0005
-ENTROPY_COEF = 0.0005
+ENTROPY_COEF = 0.00005
 
 # Value loss coefficient
 # SB3
-VALUE_LOSS_COEF = 0.25 # was 0.25
+VALUE_LOSS_COEF = 0.5 # was 0.25
 
 # Max grad norm
 # SB3

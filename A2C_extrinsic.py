@@ -28,19 +28,9 @@ if environment_config.SEED != -1:
     random.seed(environment_config.SEED)
     np.random.seed(environment_config.SEED)
 
-def make_env(env_id, rank, seed=0):
-    def _init():
-        env = gym.make(env_id)
-        env.seed(seed + rank)
-        env = WarpFrame(env, width=42, height=42)
-        env = LastAndSkipEnv(env, skip=environment_config.ACTION_SKIP)
-        return env
-    set_random_seed(seed)
-    return _init
-
 if __name__=="__main__":
     parallel_envs = 20 # 20
-    envpool_env_id = "MyWayHome-v1" # SuperMarioBros
+    envpool_env_id = "VizdoomCustom-v1" # SuperMarioBros
     global_counter = GlobalCounter()
     print(vizdoom.scenarios_path)
 
@@ -51,18 +41,9 @@ if __name__=="__main__":
                        use_combined_action=True,
                        cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
                        wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad",
-                       reward_config={"ARMOR": [0.01, 0.]})
+                       reward_config={"ARMOR": [0., 0.]})
     env.spec.id = envpool_env_id
     env = VecAdapter(env)
-
-    eval_env = envpool.make(envpool_env_id, env_type="gym", num_envs=1, seed=environment_config.SEED+256,
-                       img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
-                       stack_num=environment_config.TEMPORAL_CHANNELS, frame_skip=environment_config.ACTION_SKIP,
-                       use_combined_action=True,
-                       cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
-                       wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad")
-    eval_env.spec.id = envpool_env_id
-    eval_env = VecAdapter(eval_env)
     
     print(env.action_space.n)
     icm = ICM(env.action_space.n, environment_config.TEMPORAL_CHANNELS, 
