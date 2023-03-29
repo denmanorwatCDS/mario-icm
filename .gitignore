@@ -3,3 +3,5 @@ wandb/
 dqn_buffer
 .idea/
 __pycache__/
+tmp/
+tiles/
