@@ -46,7 +46,7 @@ def make_env(seed=environment_config.SEED):
                        goal_pos=(grid_size[0]-2, grid_size[1]-2), pixel_size=8, time_limit=50,
                        color_map=dict(floor=.0, obstacle=.43, agent=.98, target=.8),
                        const_punish=0.02*0.9, terminal_decay=1.,
-                       warp_size=(42, 42), beautiful=True)
+                       warp_size=(42, 42), beautiful=False)
         return env
     set_random_seed(seed)
     return _init

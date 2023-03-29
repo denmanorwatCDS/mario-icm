@@ -107,6 +107,7 @@ class intrinsic_A2C(A2C):
     
     def calculate_new_reward(self, obs, action, new_obs, rewards, dones):
         new_obs = obs_as_tensor(new_obs, self.motivation_device)
+
         obs, action, new_obs = (obs.to(th.float).to(self.motivation_device),
             th.from_numpy(action).to(self.motivation_device), new_obs.to(th.float))
         self.save_batch_for_icm(obs, action, new_obs, dones)
