@@ -1,6 +1,4 @@
-from environments.crossing_limited import FourRoomsEnvLimited
-from minigrid_wrappers.imagedirection import RGBImgObsDirectionWrapper
-from minigrid_wrappers.movementactions import MovementActions
+from environments.fast_grid import GridWorld, FOUR_ROOMS_OBSTACLES
 from gym.wrappers import TimeLimit
 
 import torch
@@ -22,39 +20,53 @@ from icm_mine.icm import ICM
 from config import log_config
 from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
 
+import traceback
+import warnings
+import sys
+
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+
+    log = file if hasattr(file,'write') else sys.stderr
+    traceback.print_stack(file=log)
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+
+warnings.showwarning = warn_with_traceback
+
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
     random.seed(environment_config.SEED)
     np.random.seed(environment_config.SEED)
 
-def make_env(env_id, grid_size, rank, seed=0):
+def make_env(seed=environment_config.SEED):
     def _init(agent_y_pos=1, agent_x_pos=1):
-        env = gym.make(env_id, grid_size=grid_size, agent_pos=(agent_y_pos, agent_x_pos), goal_pos=(grid_size-2, grid_size-2))
-        env.seed(seed + rank)
-        env = RGBImgObsDirectionWrapper(env, grid_size=grid_size, restriction=None)
-        env = MovementActions(env)
-        env = TimeLimit(env, 50)
-        env = WarpFrame(env, width=42, height=42)
+        grid_size = FOUR_ROOMS_OBSTACLES.shape
+        env = GridWorld(grid_size=grid_size,
+                       obstacle_mask=FOUR_ROOMS_OBSTACLES,
+                       agent_pos=(agent_y_pos, agent_x_pos),
+                       goal_pos=(grid_size[0]-2, grid_size[1]-2), pixel_size=8, time_limit=50,
+                       color_map=dict(floor=.0, obstacle=.43, agent=.98, target=.8),
+                       const_punish=0.02*0.9, terminal_decay=1.,
+                       warp_size=(42, 42), beautiful=True)
         return env
     set_random_seed(seed)
     return _init
 
 if __name__=="__main__":
+    print(FOUR_ROOMS_OBSTACLES.shape)
     parallel_envs = a2c_config.NUM_AGENTS # 20
-    grid_size = 16
-    env_id = "MiniGrid-FourRoomsEnvLimited-v0" # SuperMarioBros
-    prepare_maps(make_env(env_id, grid_size, 0, 0))
+    grid_size = FOUR_ROOMS_OBSTACLES.shape[0]
+    env_id = "MiniGrid-FastGridFourRooms-v0" # SuperMarioBros
+    #prepare_maps(make_env())
     global_counter = GlobalCounter()
     icm = ICM(4, environment_config.TEMPORAL_CHANNELS, 
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, 
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA, 
               feature_map_qty=icm_config.FMAP_QTY)\
                 .to(environment_config.MOTIVATION_DEVICE)
-
+    
     # Eval and train environments
-    env = SubprocVecEnv([make_env(env_id, grid_size, i) for i in range(parallel_envs)], start_method="forkserver")
+    env = SubprocVecEnv([make_env() for i in range(parallel_envs)], start_method="forkserver")
 
-    eval_env = SubprocVecEnv([make_env(env_id, grid_size, 256)])
     
     policy_kwargs = a2c_config.POLICY_KWARGS
 
@@ -69,8 +81,8 @@ if __name__=="__main__":
 
     model.set_logger(A2CLogger(log_config.LOSS_LOG_FREQUENCY/a2c_config.NUM_STEPS, None, "stdout", global_counter = global_counter))
     model.learn(total_timesteps=float(1e8), callback=[LoggerCallback(0, "Minigrid report", hyperparameters.HYPERPARAMS,
-                                                                     global_counter = global_counter,
-                                                                     quantity_of_agents = a2c_config.NUM_AGENTS, grid_size=grid_size,  
-                                                                     log_frequency = log_config.AGENT_LOG_FREQUENCY,
+                                                                     global_counter=global_counter,
+                                                                     quantity_of_agents=a2c_config.NUM_AGENTS, grid_size=grid_size,
+                                                                     log_frequency=log_config.AGENT_LOG_FREQUENCY,
                                                                      video_submission_frequency=log_config.VIDEO_SUBMISSION_FREQUENCY,
                                                                      device=environment_config.MOTIVATION_DEVICE)])

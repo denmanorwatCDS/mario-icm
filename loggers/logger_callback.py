@@ -9,6 +9,9 @@ import time
 import pickle
 from scipy.stats import entropy
 
+from mario_icm.environments.fast_grid import DIRECTIONS_ORDER
+
+
 class LoggerCallback(BaseCallback):
     def __init__(self, verbose, wandb_project_name, config, global_counter, quantity_of_agents, grid_size, device,
                  log_frequency=500, video_submission_frequency=10):
@@ -68,12 +71,14 @@ class LoggerCallback(BaseCallback):
         plt.clf()
         logs["Media/"+name] = wandb.Image("tmp/"+name+".png")
 
-    def get_image_grid_and_mask(self):
-        with open("tmp/image_array.pkl", "rb") as file:
+    def get_image_grid_and_mask(self, action):
+        with open("tmp/image_array_{}.pkl".format(DIRECTIONS_ORDER[action]), "rb") as file:
             unpickled_data = pickle.load(file)
-            mask, image_grid = unpickled_data["mask"], unpickled_data["image_grid"]
-            image_grid = torch.from_numpy(image_grid).permute(0, 1, 4, 2, 3)
-        return image_grid, mask
+            prev_image, new_image, mask =\
+                unpickled_data["prev_image"], unpickled_data["new_image"], torch.tensor(unpickled_data["mask"])
+            prev_image = torch.from_numpy(prev_image)
+            new_image = torch.from_numpy(new_image)
+        return prev_image, new_image, mask
 
     def update_heatmap(self, x_positions, y_positions):
         i=0
@@ -86,22 +91,19 @@ class LoggerCallback(BaseCallback):
         current_time = time.perf_counter()
         if self.previous_time is not None:
             log["Performance/Step time"] = current_time-self.previous_time
-            log["Elapsed time"] = current_time-self.previous_time
         self.previous_time = current_time
 
     def update_estimated_probability_of_ground_truth(self, old_obs, new_obs, performed_actions):
         motivation_model = self.model.motivation_model
-        old_obs, new_obs = (old_obs.to(torch.float32).to(self.model.motivation_device), 
+        old_obs, new_obs = (old_obs.to(torch.float32).to(self.model.motivation_device),
                             new_obs.to(torch.float32).to(self.model.motivation_device))
         predicted_probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
         self.step_characteristics["mean/train/raw/Estimated probability of ground truth action"].append(
             predicted_probabilities[torch.arange(0, performed_actions.shape[-1]), performed_actions].mean().item())
 
-
     def append_characteristrics(self, **kwargs):
         for statistic, value in kwargs.items():
             self.step_characteristics[statistic].append(value)
-
 
     def process_mean_characteristics(self, log):
         for simple_characteristic in self.simple_characteristics:
@@ -125,7 +127,7 @@ class LoggerCallback(BaseCallback):
 
     def log_video_if_ready(self, env_state, done, agent_obs = None):
         logs = {}
-        self.step_characteristics["Media/Environment state of agent #0"].append(env_state)
+        self.step_characteristics["Media/Environment state of agent #0"].append(env_state.cpu()[0][-1:])
         if agent_obs is not None:
             self.step_characteristics["Media/Agent #0 observations"].append(agent_obs.cpu()[0][-1:])
         if done:
@@ -133,8 +135,8 @@ class LoggerCallback(BaseCallback):
                 if self.episode_of_agent_0_counter % self.video_submission_frequency == 0:
                     if len(self.step_characteristics[name]) > 0:
                         video = np.stack(self.step_characteristics[name])
-                        if name=="Media/Environment state of agent #0":
-                            logs[name] = wandb.Video(video.transpose(0, 3, 1, 2))
+                        if name == "Media/Environment state of agent #0":
+                            logs[name] = wandb.Video(video)
                         else:
                             logs[name] = wandb.Video(video)
                 self.step_characteristics[name] = []
@@ -142,51 +144,32 @@ class LoggerCallback(BaseCallback):
         if len(logs)>0:
             wandb.log(logs, step=self.global_counter.get_count())
 
-
     def evaluate_values_and_rewards(self, logs):
-        # Prepare models
-        ACTIONS, AXES, SHIFTS, ACTION_NAMES = [0, 1, 2, 3], [1, 0, 1, 0], [1, 1, -1, -1], ["right", "down", "left", "up"]
-
         motivation_model, policy = self.model.motivation_model, self.model.policy
-        # From all available positions of agent generate new positions that corresponds to exectuion of action
-        # Nullify impossible positions (for example, it is impossible to be on the left of the wall after moving right)
-        image_grid, mask = self.get_image_grid_and_mask()
-        grid_size = image_grid.shape[0]
-        mean_intrinsic_reward, quantity_of_actions_leading_to_cell =\
-            np.zeros((grid_size, grid_size)), np.zeros((grid_size, grid_size))
-
-        for action, axes, shift, name in zip(ACTIONS, AXES, SHIFTS, ACTION_NAMES):
-            image_grid_after_action = np.roll(image_grid, shift=shift, axis=axes)
-            actions = np.zeros(image_grid_after_action.shape[0:2])+action
-            impossible_cells = (np.roll(mask, shift=shift, axis=axes) | mask)
+        ACTIONS = [0, 1, 2, 3]
+        mean_intrinsic_reward = None
+        grid_size_width, grid_size_height = None, None
+        for action in ACTIONS:
+            prev_image, new_image, mask = self.get_image_grid_and_mask(action)
+            if mean_intrinsic_reward is None:
+                mean_intrinsic_reward = np.zeros(prev_image.shape[:2])
+                grid_size_width, grid_size_height = prev_image.shape[:2]
             with torch.no_grad():
-                print("Action device: {}".format(self.device))
-                flatten_image_grid, flatten_actions, flatten_new_image_grid =\
-                    image_grid.flatten(0, 1).to(torch.float32).to(self.device), \
-                    torch.from_numpy(actions).flatten(0, 1).to(self.device).to(torch.int64),\
-                    torch.from_numpy(image_grid_after_action).flatten(0, 1).to(torch.float32).to(self.device)
-                intrinsic_rewards =\
+                flatten_image_grid, flatten_actions, flatten_new_image_grid = \
+                    prev_image.flatten(0, 1).to(torch.float32).to(self.device), \
+                    torch.zeros(grid_size_width*grid_size_height).to(int).to(self.device), \
+                    new_image.flatten(0, 1).to(torch.float32).to(self.device)
+                intrinsic_rewards = \
                     motivation_model.intrinsic_reward(flatten_image_grid, flatten_actions, flatten_new_image_grid)
-                matrix_of_intrinsic_rewards = intrinsic_rewards.reshape((grid_size, grid_size))
-                print(matrix_of_intrinsic_rewards.shape)
-                matrix_of_intrinsic_rewards[impossible_cells] = 0
-                mean_intrinsic_reward += matrix_of_intrinsic_rewards
-                matrix_of_intrinsic_rewards[impossible_cells] = float("nan")
-                self.log_array_as_heatmap(matrix_of_intrinsic_rewards,
-                                          "Intrinsic reward after moving "+name+" to target cell", logs)
-
-                quantity_of_actions_leading_to_cell += (impossible_cells==0)
-
-        quantity_of_actions_leading_to_cell += 0.001 # For numerical stability
-        mean_intrinsic_reward = mean_intrinsic_reward/quantity_of_actions_leading_to_cell
-        mean_intrinsic_reward[mask]=float("nan")
-        self.log_array_as_heatmap(mean_intrinsic_reward, "Mean intrinsic reward after moving to target cell", logs)
+            matrix_of_intrinsic_rewards = intrinsic_rewards.reshape((grid_size_width, grid_size_height))
+            matrix_of_intrinsic_rewards[mask] = float("nan")
+            self.log_array_as_heatmap(mean_intrinsic_reward, "Mean intrinsic reward after moving to target cell", logs)
         with torch.no_grad():
-            values = policy.predict_values(image_grid.flatten(0, 1).to(self.model.device)).unflatten(0, (grid_size, grid_size)).squeeze()
-            values[torch.from_numpy(mask)] = float("nan")
+            values = policy.predict_values(flatten_image_grid.to(self.model.device)).unflatten(0, (
+                grid_size_width, grid_size_height)).squeeze()
+            values[mask == 1] = float("nan")
             values = values.cpu().numpy()
             self.log_array_as_heatmap(values, "Value of target cell", logs)
-
 
     def _on_step(self):
         # Gather logging info
@@ -210,7 +193,7 @@ class LoggerCallback(BaseCallback):
         previous_observation, current_observation, current_environment_state =\
             self.locals["obs_tensor"],\
             torch.as_tensor(self.locals["new_obs"]).to(self.device), \
-            self.locals["infos"][0]["full_img"]
+            self.locals["obs_tensor"]
         actions = self.locals["clipped_actions"]
         self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
 
@@ -230,5 +213,5 @@ class LoggerCallback(BaseCallback):
             self.process_mean_characteristics(log)
             self.process_heatmap(log)
             self.log_timer(log)
-            self.evaluate_values_and_rewards(log)
+            #self.evaluate_values_and_rewards(log)
             wandb.log(log, step=self.global_counter.get_count())

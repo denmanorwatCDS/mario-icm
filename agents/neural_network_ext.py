@@ -17,7 +17,6 @@ class ActorCritic(BaseFeaturesExtractor):
         self.linear = nn.Linear(32 * 3 * 3, features_dim) # Hardcoded image size: bad practice
 
     def forward(self, inputs):
-        inputs = inputs
         x = F.elu(self.conv1(inputs))
         x = F.elu(self.conv2(x))
         x = F.elu(self.conv3(x))

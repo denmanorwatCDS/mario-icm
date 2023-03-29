@@ -50,6 +50,7 @@ class intrinsic_A2C(A2C):
 
             with th.no_grad():
                 # Convert to pytorch tensor or to TensorDict
+                #print(self._last_obs)
                 obs_tensor = obs_as_tensor(self._last_obs, self.device)
                 actions, values, log_probs = self.policy(obs_tensor)
             actions = actions.cpu().numpy()
@@ -60,7 +61,6 @@ class intrinsic_A2C(A2C):
             if isinstance(self.action_space, spaces.Box):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
             new_obs, rewards, dones, infos = env.step(clipped_actions)
-
             # Vectorized wrapper, after issuing of done signal, automaticly reset env and generates new observation
             rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward =\
                 self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, dones)

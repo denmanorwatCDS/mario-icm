@@ -1,5 +1,5 @@
 #Config cell
-SEED = 100
+SEED = 1
 
 ALL_ACTION_SPACE = [['NOOP'],
     ['right'], ['right', 'A'], ['right', 'B'], ['right', 'A', 'B'],
