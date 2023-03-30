@@ -67,7 +67,7 @@ class SimplefeatureNet(nn.Module):
 
     def forward(self, x):
         # WARNING Normalize
-        x = F.normalize(x)
+        x = x/255.
         y = self.simple_encoder(x) #size N, 288
         return y
 

@@ -301,6 +301,8 @@ class GridWorld(gym.Env):
         (i, j), px = pos, self.pixel_size
         i, j = i*px, j*px
         self._obs[i: i + px, j: j + px] = self.render_tile(entity)
+        #print(self.render_tile(entity).dtype)
+        #print(self._obs.dtype)
 
 
     def seed(self, seed: int) -> int:

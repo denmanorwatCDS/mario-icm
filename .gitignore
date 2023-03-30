@@ -5,3 +5,4 @@ dqn_buffer
 __pycache__/
 tmp/
 tiles/
+test/

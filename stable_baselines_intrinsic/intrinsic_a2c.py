@@ -3,6 +3,7 @@ from torch.nn.utils import clip_grad_norm_
 import numpy as np
 import torch as th
 from gym import spaces
+from PIL import Image
 
 from stable_baselines3.common.utils import obs_as_tensor
 
@@ -110,6 +111,7 @@ class intrinsic_A2C(A2C):
 
         obs, action, new_obs = (obs.to(th.float).to(self.motivation_device),
             th.from_numpy(action).to(self.motivation_device), new_obs.to(th.float))
+        self.save_triplet(obs, action, new_obs)
         self.save_batch_for_icm(obs, action, new_obs, dones)
         int_reward = np.zeros(rewards.shape)
         ext_reward = rewards
@@ -164,3 +166,13 @@ class intrinsic_A2C(A2C):
             total_norm += param_norm.item() ** 2
         total_norm = total_norm ** 0.5
         return total_norm
+
+    def save_triplet(self, old_obs, actions, new_obs):
+        for i in range(old_obs.shape[0]):
+            start = old_obs[i].cpu().numpy().squeeze().astype(np.uint8)
+            end = new_obs[i].cpu().numpy().squeeze().astype(np.uint8)
+            action = actions[i].cpu().numpy()
+            im = Image.fromarray(start, "L")
+            im.save("test/start_{}_action={}.jpeg".format(i, action))
+            im = Image.fromarray(end, "L")
+            im.save("test/env_{}_action={}.jpeg".format(i, action))

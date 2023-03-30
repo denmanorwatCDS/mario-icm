@@ -9,7 +9,8 @@ import time
 import pickle
 from scipy.stats import entropy
 
-from mario_icm.environments.fast_grid import DIRECTIONS_ORDER
+from environments.fast_grid import DIRECTIONS_ORDER
+from loggers.prepare_maps import FOUR_ROOMS_OBSTACLES
 
 
 class LoggerCallback(BaseCallback):
@@ -71,14 +72,14 @@ class LoggerCallback(BaseCallback):
         plt.clf()
         logs["Media/"+name] = wandb.Image("tmp/"+name+".png")
 
-    def get_image_grid_and_mask(self, action):
-        with open("tmp/image_array_{}.pkl".format(DIRECTIONS_ORDER[action]), "rb") as file:
+    def get_triplets_and_coordinates(self):
+        with open("tmp/image_array.pkl", "rb") as file:
             unpickled_data = pickle.load(file)
-            prev_image, new_image, mask =\
-                unpickled_data["prev_image"], unpickled_data["new_image"], torch.tensor(unpickled_data["mask"])
-            prev_image = torch.from_numpy(prev_image)
-            new_image = torch.from_numpy(new_image)
-        return prev_image, new_image, mask
+            prev_images, actions, new_images, coordinates, grid_size, obs_matrix =\
+                unpickled_data["prev_obs"].to(self.device), unpickled_data["action"].to(self.device), \
+                    unpickled_data["next_obs"].to(self.device), unpickled_data["position"], \
+                    unpickled_data["grid_size"], unpickled_data["obs_matrix"]
+        return prev_images, actions, new_images, coordinates, grid_size, obs_matrix
 
     def update_heatmap(self, x_positions, y_positions):
         i=0
@@ -145,31 +146,42 @@ class LoggerCallback(BaseCallback):
             wandb.log(logs, step=self.global_counter.get_count())
 
     def evaluate_values_and_rewards(self, logs):
+        ACTION_TO_NAME = {0: "right", 1: "down", 2: "left", 3: "up"}
         motivation_model, policy = self.model.motivation_model, self.model.policy
-        ACTIONS = [0, 1, 2, 3]
-        mean_intrinsic_reward = None
-        grid_size_width, grid_size_height = None, None
-        for action in ACTIONS:
-            prev_image, new_image, mask = self.get_image_grid_and_mask(action)
-            if mean_intrinsic_reward is None:
-                mean_intrinsic_reward = np.zeros(prev_image.shape[:2])
-                grid_size_width, grid_size_height = prev_image.shape[:2]
-            with torch.no_grad():
-                flatten_image_grid, flatten_actions, flatten_new_image_grid = \
-                    prev_image.flatten(0, 1).to(torch.float32).to(self.device), \
-                    torch.zeros(grid_size_width*grid_size_height).to(int).to(self.device), \
-                    new_image.flatten(0, 1).to(torch.float32).to(self.device)
-                intrinsic_rewards = \
-                    motivation_model.intrinsic_reward(flatten_image_grid, flatten_actions, flatten_new_image_grid)
-            matrix_of_intrinsic_rewards = intrinsic_rewards.reshape((grid_size_width, grid_size_height))
-            matrix_of_intrinsic_rewards[mask] = float("nan")
-            self.log_array_as_heatmap(mean_intrinsic_reward, "Mean intrinsic reward after moving to target cell", logs)
+        prev_images, actions, new_images, positions, grid_size, obs_matrix = self.get_triplets_and_coordinates()
+
+        reward_matrix_by_action = [np.zeros(grid_size) for i in range(4)]
+        agent_occurence_by_action = [np.zeros(grid_size) for i in range(4)]
         with torch.no_grad():
-            values = policy.predict_values(flatten_image_grid.to(self.model.device)).unflatten(0, (
-                grid_size_width, grid_size_height)).squeeze()
-            values[mask == 1] = float("nan")
-            values = values.cpu().numpy()
-            self.log_array_as_heatmap(values, "Value of target cell", logs)
+            print("Images shape: {}".format(prev_images.shape))
+            print("Actions shape: {}".format(actions.shape))
+            rewards = motivation_model.intrinsic_reward(prev_images, actions, new_images)
+            print("Rewards shape: {}".format(rewards.shape))
+        for i in range(len(positions)):
+            position = tuple(positions[i])
+            reward_matrix_by_action[actions[i]][position] += rewards[i]
+            agent_occurence_by_action[actions[i]][position] += 1
+        reward_heatmaps = {}
+        all_rewards = np.zeros(grid_size)
+        all_occurences = np.zeros(grid_size)
+        for action in range(4):
+            reward_heatmaps["Reward heatmap after arriving to cell from {}".format(ACTION_TO_NAME[action])] = \
+                reward_matrix_by_action[action]/agent_occurence_by_action[action]
+            all_rewards += reward_matrix_by_action[action]
+            all_occurences += agent_occurence_by_action[action]
+        reward_heatmaps["Mean reward heatmap after arriving to cell".format(ACTION_TO_NAME[action])] = \
+            all_rewards/all_occurences
+
+        for key, value in reward_heatmaps.items():
+            self.log_array_as_heatmap(value, key, logs)
+
+        shape = obs_matrix.shape[:2]
+        with torch.no_grad():
+            values = policy.predict_values(torch.flatten(obs_matrix, start_dim=0, end_dim=1).to(self.device)).reshape(shape)
+            values[torch.from_numpy(FOUR_ROOMS_OBSTACLES==1)] = float("nan")
+            self.log_array_as_heatmap(values.cpu().numpy(), "Value of state", logs)
+
+
 
     def _on_step(self):
         # Gather logging info
@@ -213,5 +225,5 @@ class LoggerCallback(BaseCallback):
             self.process_mean_characteristics(log)
             self.process_heatmap(log)
             self.log_timer(log)
-            #self.evaluate_values_and_rewards(log)
+            self.evaluate_values_and_rewards(log)
             wandb.log(log, step=self.global_counter.get_count())
