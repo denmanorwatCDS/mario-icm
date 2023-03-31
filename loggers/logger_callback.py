@@ -114,6 +114,7 @@ class LoggerCallback(BaseCallback):
     def process_heatmap(self, logs):
         visitations = np.array(self.step_characteristics["Media/Heatmap"])
         mean_unique_visited_states = (visitations>0).sum(axis=(1, 2)).mean()
+        print(entropy(visitations.reshape((-1, self.quantity_of_agents))).shape)
         mean_entropy_of_all_states = entropy(visitations.reshape((-1, self.quantity_of_agents))).mean()
         average_heatmap = np.mean(self.step_characteristics["Media/Heatmap"], axis=0)
         all_states = average_heatmap.shape[0]*average_heatmap.shape[1]

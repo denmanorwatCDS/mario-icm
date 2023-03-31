@@ -6,10 +6,11 @@ DEVICE = torch.device("cpu")
 
 
 class Predictor(nn.Module):
-    def __init__(self, action_dim, state_dim, hidden_layer_neurons):
+    def __init__(self, action_dim, state_dim, hidden_layer_neurons, predict_delta = False):
         super(Predictor, self).__init__()
         self.action_dim = action_dim
         self.state_dim = state_dim
+        self.predict_delta = predict_delta
         self.simple_state_predictor = torch.nn.Sequential(nn.Linear(state_dim + action_dim, hidden_layer_neurons),
                                                           nn.ReLU(),
                                                           nn.Linear(hidden_layer_neurons, state_dim))
@@ -20,6 +21,8 @@ class Predictor(nn.Module):
 
         concat_info = torch.cat((state, action), dim = 1)
         predicted_state = self.simple_state_predictor(concat_info)
+        if self.predict_delta:
+            predicted_state += state.detach()
         return predicted_state
 
 
@@ -74,7 +77,7 @@ class SimplefeatureNet(nn.Module):
 
 class ICM(nn.Module):
     def __init__(self, action_dim, temporal_channels, inv_scale, forward_scale,
-                use_softmax, hidden_layer_neurons, eta, feature_map_qty,):
+                use_softmax, hidden_layer_neurons, eta, feature_map_qty, ema_reward_coef=0., predict_delta = False):
         super(ICM, self).__init__()
         self.eta = eta
         self.inv_scale = inv_scale
@@ -85,7 +88,11 @@ class ICM(nn.Module):
         self.action_dim = action_dim
         self.state_dim = self.feature.state_dim
         self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons, use_softmax=use_softmax).train()
-        self.forward_net = Predictor(self.action_dim, self.state_dim, hidden_layer_neurons).train()
+        self.forward_net = Predictor(self.action_dim, self.state_dim, hidden_layer_neurons, predict_delta=predict_delta).train()
+        self.ema_reward_coef = ema_reward_coef
+        if ema_reward_coef>0.:
+            self.ema_reward = 0.
+        self.predict_delta = predict_delta
 
 
     def forward(self, observation, action, next_observation):
@@ -140,6 +147,9 @@ class ICM(nn.Module):
             real_state = self.feature(next_observation)
             intrinsic_reward =\
                 self.eta*((predicted_state-real_state)**2).sum(dim=1).cpu().detach().numpy()
+            if self.ema_reward_coef != 0.:
+                self.ema_reward = self.ema_reward*self.ema_reward_coef+(1-self.ema_reward_coef)*intrinsic_reward.mean()
+                intrinsic_reward -= self.ema_reward
         return intrinsic_reward
 
 

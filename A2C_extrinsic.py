@@ -49,7 +49,8 @@ if __name__=="__main__":
     icm = ICM(4, environment_config.TEMPORAL_CHANNELS, 
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False, 
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA, 
-              feature_map_qty=icm_config.FMAP_QTY)\
+              feature_map_qty=icm_config.FMAP_QTY, ema_reward_coef=icm_config.REWARD_EMA_COEF,
+              predict_delta=icm_config.PREDICT_DELTA)\
                 .to(environment_config.MOTIVATION_DEVICE)
     
     # Eval and train environments

@@ -35,7 +35,6 @@ class intrinsic_A2C(A2C):
         assert self._last_obs is not None, "No previous observation was provided"
         # Switch to eval mode (this affects batch norm / dropout)
         self.policy.set_training_mode(False)
-
         n_steps = 0
         rollout_buffer.reset()
         # Sample new weights for the state dependent exploration
@@ -120,7 +119,6 @@ class intrinsic_A2C(A2C):
             return rewards, 0, rewards
         else:
             int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
-            int_reward = np.clip(int_reward, 0, 1)
             int_reward[dones==True] = 0
             rewards = int_reward*self.intrinsic_reward_coef + ext_reward*(1-self.intrinsic_reward_coef)
         return rewards, int_reward*self.intrinsic_reward_coef, ext_reward*(1-self.intrinsic_reward_coef), int_reward, ext_reward

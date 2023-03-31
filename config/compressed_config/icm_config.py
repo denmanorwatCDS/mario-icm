@@ -31,6 +31,12 @@ WARMUP = 0
 # Intrinsic reward coef:
 INTRINSIC_REWARD_COEF = 1.
 
+# Exponential moving average coefficient for mean reward calculation
+REWARD_EMA_COEF = 0.
+
+# Predict delta of state difference instead of absolute state difference
+PREDICT_DELTA = True
+
 config_dict = {
     "ETA - multiplier of intrinsic reward": ETA,
     "HIDDEN_LAYERS - quantity of neurons in hidden layer of ICM": HIDDEN_LAYERS,
@@ -40,5 +46,7 @@ config_dict = {
     "FORWARD_SCALE - similiar to INVERSE_SCALE, but not only batch, but also features factorization": FORWARD_SCALE,
     "GRAD_NORM - gradient norm clipping for ICM": GRAD_NORM,
     "WARMUP - warmup steps for ICM": WARMUP,
-    "INTRINSIC_REWARD_COEF - intrinsic reward coefficient for model": INTRINSIC_REWARD_COEF
+    "INTRINSIC_REWARD_COEF - intrinsic reward coefficient for model": INTRINSIC_REWARD_COEF,
+    "REWARD_EMA_COEF - exponential moving average reward coeficient": REWARD_EMA_COEF,
+    "PREDICT_DELTA - Predict delta of state difference instead of absolute state difference": PREDICT_DELTA
 }
