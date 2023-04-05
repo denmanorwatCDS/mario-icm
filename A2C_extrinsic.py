@@ -11,6 +11,7 @@ from loggers.eval_callback import LoggerEvalCallback
 from loggers.a2c_logger import A2CLogger
 from loggers.global_counter import GlobalCounter
 from stable_baselines_intrinsic.intrinsic_a2c_doom import intrinsic_A2C
+from stable_baselines_intrinsic.intrinsic_ppo_doom import Intrinsic_PPO
 from icm_mine.icm import ICM
 
 from wrappers.LastAndSkipEnv import LastAndSkipEnv
@@ -54,12 +55,11 @@ if __name__=="__main__":
 
     policy_kwargs = a2c_config.POLICY_KWARGS
 
-    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR, 
+    model = Intrinsic_PPO(policy="CnnPolicy", env=env, motivation_model=icm, 
+                          global_counter=global_counter, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM, intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF,
-                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=a2c_config.LR, 
-                          n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA, 
-                          ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF, max_grad_norm=a2c_config.MAX_GRAD_NORM, 
-                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs, seed=environment_config.SEED,
+                          warmup_steps=0,
+                          policy_kwargs=policy_kwargs, seed=environment_config.SEED,
                           device=environment_config.MODEL_DEVICE, motivation_device=environment_config.MOTIVATION_DEVICE)
 
 

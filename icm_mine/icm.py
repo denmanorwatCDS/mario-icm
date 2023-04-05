@@ -69,10 +69,9 @@ class SimplefeatureNet(nn.Module):
 
     def forward(self, x):
         # WARNING Normalize
-        gray_inputs = [self.gray(x[:, :3]), self.gray(x[:, 3:6]),
-                       self.gray(x[:, 6:9]), self.gray(x[:, 9:])]
-        gray_inputs = torch.cat(gray_inputs, dim=1)
-        x = F.normalize(gray_inputs)
+        #gray_inputs = [self.gray(x[:, :3])]
+        #gray_inputs = torch.cat(gray_inputs, dim=1)
+        x = x/255.
         y = self.simple_encoder(x) #size N, 288
         return y
 
