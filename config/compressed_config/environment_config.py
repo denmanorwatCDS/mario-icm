@@ -17,10 +17,10 @@ ACTION_SPACE_SIZE = len(ALL_ACTION_SPACE)
 RESIZED_SIZE = (42, 42)
 
 # Temporal channels quantity
-TEMPORAL_CHANNELS = 1 #4
+TEMPORAL_CHANNELS = 4 #4
 
 # Action skip
-ACTION_SKIP = 1
+ACTION_SKIP = 4
 
 # FPS of submitted video
 FPS = 30

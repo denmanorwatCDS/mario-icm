@@ -55,7 +55,7 @@ if __name__=="__main__":
 
     policy_kwargs = a2c_config.POLICY_KWARGS
 
-    model = Intrinsic_PPO(policy="CnnPolicy", env=env, motivation_model=icm, 
+    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm,
                           global_counter=global_counter, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM, intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF,
                           warmup_steps=0,

@@ -102,6 +102,7 @@ class LoggerCallback(BaseCallback):
     def log_video_if_ready(self, env_state, done, agent_obs=None):
         logs = {}
         frame = self.gray(env_state[0, :3])
+        print(frame.shape)
         self.step_characteristics["Media/Environment state of agent #0"].append(frame.cpu())
         if agent_obs is not None:
             self.step_characteristics["Media/Agent #0 observations"].append(agent_obs.cpu()[0][-1:])
