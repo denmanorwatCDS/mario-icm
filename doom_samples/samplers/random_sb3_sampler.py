@@ -1,12 +1,13 @@
 import numpy
 import numpy as np
 
-
-from config.compressed_config import environment_config
-import envpool
+import wandb
 from envpool_to_sb3.vec_adapter import VecAdapter
 from pathlib import Path
-import wandb
+from doom_samples.utils.wrapper import ObservationWrapper
+from stable_baselines3.common.env_util import make_vec_env
+from doom_samples.custom_VizDoomEnv import CustomVizDoomEnv
+from gym.wrappers import FrameStack
 
 def prepare_folders(quantity, is_test = False):
     folder = "/home/dvasilev/doom_dataset/no_action_repeat/train"
@@ -31,8 +32,8 @@ def save_observations(current_iter, obs, new_obs, is_test = False):
     for i in range(len(obs)):
         first_frame_folder = folder + "/" + str(i) + "/" + "start_frames"
         second_frame_folder = folder + "/" + str(i) + "/" + "end_frames"
-        np.save(first_frame_folder + "/" + str(current_iter), grayscale_obs(obs[i]))
-        np.save(second_frame_folder + "/" + str(current_iter), grayscale_obs(new_obs[i]))
+        np.save(first_frame_folder + "/" + str(current_iter), obs[i])
+        np.save(second_frame_folder + "/" + str(current_iter), new_obs[i])
 
 def save_action_array(action_array, is_test = False):
     folder = "/home/dvasilev/doom_dataset/no_action_repeat/train"
@@ -41,36 +42,23 @@ def save_action_array(action_array, is_test = False):
     for i in range(action_array.shape[1]):
         np.save(folder + "/" + str(i) + "/" + "actions", np.array(action_array[:, i]))
 
-def discrete_to_continuous_action(action):
-    multipliers = np.array([5, 10, 5])
-    quantity_of_agents = action.shape[0]
-    action_OHE = np.zeros((quantity_of_agents, 3))
-    action_OHE[np.arange(quantity_of_agents), action] = 1
-    return action_OHE * multipliers
+def wrap_env(env):
+    env = CustomVizDoomEnv("VizdoomMyWayHome-v0")
+    env = ObservationWrapper(env)
+    env = FrameStack(env, 4)
+    return env
 
-
-envpool_env_id = "VizdoomCustom-v1"
 parallel_envs = 20
-env = envpool.make(envpool_env_id, env_type="gym", num_envs=parallel_envs, seed=environment_config.SEED,
-                       img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
-                       stack_num=4, frame_skip=1,
-                       cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
-                       wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad",
-                       reward_config={"ARMOR": [0., 0.]})
+env = make_vec_env("VizdoomMyWayHome-v0", n_envs=parallel_envs, wrapper_class=wrap_env)
 wandb.init("EnvPool test")
 prepare_folders(parallel_envs)
-env.spec.id = envpool_env_id
-env = VecAdapter(env)
 action_array = []
 obs = env.reset()
 i = 0
 video = []
 while i < 50_000:
-    vid_obs = grayscale_obs(obs)[0, 0:1, :, :]
-    print(vid_obs.shape)
-    video.append(vid_obs)
+    video.append(obs[0, 0:1])
     actions = np.random.randint(0, 3, parallel_envs)
-    actions = discrete_to_continuous_action(actions)
     new_obs, rewards, dones, info = env.step(actions)
     if not np.any(dones):
         save_observations(i, obs, new_obs)

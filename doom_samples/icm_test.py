@@ -13,7 +13,7 @@ test_dataloader = DataLoader(test, batch_size=batch_size, shuffle=False)
 dataset_size = len(train_dataloader)
 dataset_iter = int(dataset_size/batch_size)
 epochs = 10
-ICM = ICM(6, 4, 0.8, 0.2, False, 256, 0.2, 32)
+ICM = ICM(3, 4, 0.8, 0.2, False, 256, 0.2, 32)
 ICM = ICM.to("cuda:0")
 
 optim = torch.optim.Adam(ICM.parameters(), lr=1e-03)

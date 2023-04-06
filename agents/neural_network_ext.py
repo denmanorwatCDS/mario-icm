@@ -19,8 +19,9 @@ class ActorCritic(BaseFeaturesExtractor):
         self.linear = nn.Linear(32 * 3 * 3, features_dim) # Hardcoded image size: bad practice
 
     def forward(self, inputs):
-        gray_inputs = [self.gray(inputs[:, :3]), self.gray(inputs[:, 3:6]), self.gray(inputs[:, 6:9]), self.gray(inputs[:, 9:])]
-        gray_inputs = torch.cat(gray_inputs, dim=1)
+        #gray_inputs = [self.gray(inputs[:, :3]), self.gray(inputs[:, 3:6]), self.gray(inputs[:, 6:9]), self.gray(inputs[:, 9:])]
+        #gray_inputs = torch.cat(gray_inputs, dim=1)
+        gray_inputs = inputs
         x = F.elu(self.conv1(gray_inputs))
         x = F.elu(self.conv2(x))
         x = F.elu(self.conv3(x))

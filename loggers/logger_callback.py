@@ -142,6 +142,7 @@ class LoggerCallback(BaseCallback):
         previous_observation, current_observation = \
             self.locals["obs_tensor"], \
                 torch.as_tensor(self.locals["new_obs"]).to(self.device)
+        print("Observation: {}".format(previous_observation.shape))
         actions = self.locals["clipped_actions"]
         self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
 
