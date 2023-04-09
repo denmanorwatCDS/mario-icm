@@ -23,7 +23,7 @@ GAE_LAMBDA = 1.
 
 # Entropy coef
 # SB3; Was 0.0005
-ENTROPY_COEF = 0.0001
+ENTROPY_COEF = 0.0005
 
 # Value loss coefficient
 # SB3

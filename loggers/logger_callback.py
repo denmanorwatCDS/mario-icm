@@ -101,8 +101,7 @@ class LoggerCallback(BaseCallback):
 
     def log_video_if_ready(self, env_state, done, agent_obs=None):
         logs = {}
-        frame = self.gray(env_state[0, :3])
-        print(frame.shape)
+        frame = env_state[0]
         self.step_characteristics["Media/Environment state of agent #0"].append(frame.cpu())
         if agent_obs is not None:
             self.step_characteristics["Media/Agent #0 observations"].append(agent_obs.cpu()[0][-1:])
@@ -142,7 +141,6 @@ class LoggerCallback(BaseCallback):
         previous_observation, current_observation = \
             self.locals["obs_tensor"], \
                 torch.as_tensor(self.locals["new_obs"]).to(self.device)
-        print("Observation: {}".format(previous_observation.shape))
         actions = self.locals["clipped_actions"]
         self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
 

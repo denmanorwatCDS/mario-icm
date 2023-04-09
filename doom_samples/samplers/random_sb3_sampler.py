@@ -8,6 +8,7 @@ from doom_samples.utils.wrapper import ObservationWrapper
 from stable_baselines3.common.env_util import make_vec_env
 from doom_samples.custom_VizDoomEnv import CustomVizDoomEnv
 from gym.wrappers import FrameStack
+from vizdoom.gym_wrapper.base_gym_env import VizdoomEnv
 
 def prepare_folders(quantity, is_test = False):
     folder = "/home/dvasilev/doom_dataset/no_action_repeat/train"
@@ -43,7 +44,7 @@ def save_action_array(action_array, is_test = False):
         np.save(folder + "/" + str(i) + "/" + "actions", np.array(action_array[:, i]))
 
 def wrap_env(env):
-    env = CustomVizDoomEnv("VizdoomMyWayHome-v0")
+    env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=1)
     env = ObservationWrapper(env)
     env = FrameStack(env, 4)
     return env

@@ -10,7 +10,7 @@ class ActorCritic(BaseFeaturesExtractor):
     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256): # modified action_space->action_space_size
         super(ActorCritic, self).__init__(observation_space, features_dim)
         self.gray = Grayscale(1)
-        num_inputs = observation_space.shape[0]//3
+        num_inputs = observation_space.shape[0]
         self.conv1 = nn.Conv2d(num_inputs, 32, 3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(32, 32, 3, stride=2, padding=1)
         self.conv3 = nn.Conv2d(32, 32, 3, stride=2, padding=1)

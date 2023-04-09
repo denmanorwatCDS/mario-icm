@@ -60,6 +60,7 @@ class CustomVizDoomEnv(VizdoomEnv):
                 allowed_buttons.append(button)
         self.game.set_available_buttons(allowed_buttons)
         self.action_space = gym.spaces.Discrete(len(allowed_buttons))
+        self.game.set_doom_scenario_path("maps/my_way_home_very_easy.wad")
 
         # specify observation space(s)
         spaces = {

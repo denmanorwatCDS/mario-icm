@@ -88,6 +88,7 @@ class intrinsic_A2C(A2C):
             new_obs, rewards, dones, infos = env.step(clipped_actions)
             self.debug(dones, rewards)
             # Reset doom reward
+            """
             rewards[0:] = 0
             rewards[dones & (self.step_counter<525)] = 1
             if dones.any():
@@ -95,6 +96,7 @@ class intrinsic_A2C(A2C):
                 print("Step counter: {}".format(self.step_counter))
                 print("Rewards: {}".format(rewards))
             self.step_counter[dones]=0
+            """
             
 
             rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward =\

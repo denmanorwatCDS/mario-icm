@@ -4,8 +4,6 @@ import random
 import gym
 import os
 import vizdoom
-from stable_baselines3.common.atari_wrappers import WarpFrame
-from stable_baselines3.common.utils import set_random_seed
 from loggers.logger_callback import LoggerCallback
 from loggers.eval_callback import LoggerEvalCallback
 from loggers.a2c_logger import A2CLogger
@@ -18,16 +16,25 @@ from wrappers.LastAndSkipEnv import LastAndSkipEnv
 
 from config import log_config
 from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
-from agents.neural_network_ext import ActorCritic
 import envpool
 from envpool_to_sb3.vec_adapter import VecAdapter
-import envpool_to_sb3
 
-os.environ["CUDA_LAUNCH_BLOCKING"] = '1'
+from doom_samples.utils.wrapper import ObservationWrapper
+from stable_baselines3.common.env_util import make_vec_env
+from vizdoom.gym_wrapper.base_gym_env import VizdoomEnv
+from gym.wrappers import FrameStack
+
 if environment_config.SEED != -1:
     torch.manual_seed(environment_config.SEED)
     random.seed(environment_config.SEED)
     np.random.seed(environment_config.SEED)
+
+def wrap_env(env):
+    env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=4)
+    env.reset()
+    env = ObservationWrapper(env)
+    env = FrameStack(env, environment_config.TEMPORAL_CHANNELS)
+    return env
 
 if __name__=="__main__":
     parallel_envs = 20 # 20
@@ -36,15 +43,7 @@ if __name__=="__main__":
     print(vizdoom.scenarios_path)
 
     # Eval and train environments
-    env = envpool.make(envpool_env_id, env_type="gym", num_envs=parallel_envs, seed=environment_config.SEED,
-                       img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
-                       stack_num=environment_config.TEMPORAL_CHANNELS, frame_skip=environment_config.ACTION_SKIP,
-                       use_combined_action=True,
-                       cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
-                       wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad",
-                       reward_config={"ARMOR": [0., 0.]})
-    env.spec.id = envpool_env_id
-    env = VecAdapter(env)
+    env = make_vec_env("VizdoomMyWayHome-v0", n_envs=parallel_envs, wrapper_class=wrap_env)
     
     print(env.action_space.n)
     icm = ICM(env.action_space.n, environment_config.TEMPORAL_CHANNELS, 
@@ -55,11 +54,12 @@ if __name__=="__main__":
 
     policy_kwargs = a2c_config.POLICY_KWARGS
 
-    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm,
-                          global_counter=global_counter, motivation_lr=icm_config.LR,
+    model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM, intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF,
-                          warmup_steps=0,
-                          policy_kwargs=policy_kwargs, seed=environment_config.SEED,
+                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=a2c_config.LR,
+                          n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA,
+                          ent_coef=a2c_config.ENTROPY_COEF, vf_coef=a2c_config.VALUE_LOSS_COEF, max_grad_norm=a2c_config.MAX_GRAD_NORM,
+                          use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs,
                           device=environment_config.MODEL_DEVICE, motivation_device=environment_config.MOTIVATION_DEVICE)
 
 

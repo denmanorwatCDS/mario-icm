@@ -34,14 +34,14 @@ class LastAndSkipEnv(MaxAndSkipEnv):
         total_reward = 0.0
         done = None
         for i in range(self._skip):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, terminated, truncated, info = self.env.step(action)
             total_reward += reward
             if done:
                 break
         # Note that the observation on the done=True frame
         # doesn't matter
 
-        return obs, total_reward, done, info
+        return obs, total_reward, terminated, truncated, info
 
     def reset(self, **kwargs) -> GymObs:
         return self.env.reset(**kwargs)

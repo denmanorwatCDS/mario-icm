@@ -1,4 +1,4 @@
-from doom_samples.custom_VizDoomEnv import CustomVizDoomEnv
+from vizdoom.gym_wrapper.base_gym_env import VizdoomEnv
 import numpy as np
 from gym.wrappers import FrameStack
 import wandb
@@ -37,9 +37,9 @@ def gather_data(iterations, env, name, is_test = False):
 
 if __name__ == "__main__":
     wandb.init("vizdoom_dataset_sanity_check")
-    env = CustomVizDoomEnv("VizdoomMyWayHome-v0")
+    env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=4)
     env = ObservationWrapper(env)
     env = FrameStack(env, 4, lz4_compress=False)
-    #for i in range(20):
-    #    gather_data(50_000, env, name=str(i), is_test=False)
+    for i in range(20):
+        gather_data(50_000, env, name=str(i), is_test=False)
     gather_data(10_000, env, name="0", is_test=True)
