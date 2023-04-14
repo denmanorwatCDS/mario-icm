@@ -9,15 +9,14 @@ from loggers.eval_callback import LoggerEvalCallback
 from loggers.a2c_logger import A2CLogger
 from loggers.global_counter import GlobalCounter
 from stable_baselines_intrinsic.intrinsic_a2c_doom import intrinsic_A2C
-from stable_baselines_intrinsic.intrinsic_ppo_doom import Intrinsic_PPO
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import SubprocVecEnv
 from icm_mine.icm import ICM
-
-from wrappers.LastAndSkipEnv import LastAndSkipEnv
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.atari_wrappers import AtariWrapper
 
 from config import log_config
 from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
-import envpool
-from envpool_to_sb3.vec_adapter import VecAdapter
 
 from doom_samples.utils.wrapper import ObservationWrapper
 from stable_baselines3.common.env_util import make_vec_env
@@ -29,12 +28,17 @@ if environment_config.SEED != -1:
     random.seed(environment_config.SEED)
     np.random.seed(environment_config.SEED)
 
-def wrap_env(env):
-    env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=4)
-    env.reset()
-    env = ObservationWrapper(env)
-    env = FrameStack(env, environment_config.TEMPORAL_CHANNELS)
-    return env
+
+def prepare_env(seed, rank):
+    def wrap_env():
+        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=4)
+        env.reset(seed=seed+rank)
+        env = Monitor(env, filename=None)
+        env = ObservationWrapper(env)
+        return env
+
+    set_random_seed(seed)
+    return wrap_env
 
 if __name__=="__main__":
     parallel_envs = 20 # 20
@@ -43,7 +47,7 @@ if __name__=="__main__":
     print(vizdoom.scenarios_path)
 
     # Eval and train environments
-    env = make_vec_env("VizdoomMyWayHome-v0", n_envs=parallel_envs, wrapper_class=wrap_env)
+    env = SubprocVecEnv([prepare_env(0, i) for i in range(parallel_envs)])
     
     print(env.action_space.n)
     icm = ICM(env.action_space.n, environment_config.TEMPORAL_CHANNELS, 

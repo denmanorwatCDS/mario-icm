@@ -35,7 +35,7 @@ def classical_train(train_dataloader, ICM, optim, test_dataloader, epochs=1):
 def one_batch_train(train_dataloader, ICM, optim):
     start_frames, end_frames, actions = next(iter(train_dataloader))
     start_frames, end_frames, actions = start_frames.to("cuda:0"), end_frames.to("cuda:0"), actions.to("cuda:0")
-    for i in range(1000):
+    for i in range(5_000):
         forward_loss, inverse_loss = ICM.get_losses(start_frames, actions, end_frames)
         icm_loss = forward_loss + inverse_loss
         optim.zero_grad()
@@ -49,7 +49,7 @@ def one_batch_train(train_dataloader, ICM, optim):
 def slice_train(train_dataloader, ICM, optim):
     inverse_loss = torch.tensor(1.)
     counter = 0
-    while inverse_loss.detach().cpu().item() > 0.25 and counter < 50_000:
+    while inverse_loss > 0.25 and counter < 7_500:
         for start_frames, end_frames, actions in train_dataloader:
             start_frames, end_frames, actions = start_frames.to("cuda:0"), end_frames.to("cuda:0"), actions.to("cuda:0")
             forward_loss, inverse_loss = ICM.get_losses(start_frames, actions, end_frames)
@@ -57,18 +57,22 @@ def slice_train(train_dataloader, ICM, optim):
             optim.zero_grad()
             icm_loss.backward()
             optim.step()
-            wandb.log({"Forward loss": forward_loss.cpu().detach(),
-                       "Inverse loss": inverse_loss.cpu().detach(),
-                       "ICM loss": icm_loss.cpu().detach()})
+            if counter%1000 == 0:
+                wandb.log({"Forward loss": forward_loss.cpu().detach(),
+                           "Inverse loss": inverse_loss.cpu().detach(),
+                           "ICM loss": icm_loss.cpu().detach()})
             counter += 1
+    wandb.log({"Forward loss": forward_loss.cpu().detach(),
+               "Inverse loss": inverse_loss.cpu().detach(),
+               "ICM loss": icm_loss.cpu().detach()})
 
 
 
 sweep_configuration = {
     "method": "grid",
     "parameters": {
-        "batch_size": {"values": [100, 250, 500, 1000, 2000, 5000]},
-        "lr": {"values": [1e-02, 1e-03, 1e-04, 1e-05]},
+        "batch_size": {"values": [1000, 2000]},
+        "lr": {"values": [1e-02, 1e-03, 1e-04]},
         "dataset_size": {"values": [10_000, 1_000_000]}
     }
 }
@@ -83,7 +87,7 @@ def main():
     wandb.init()
     train, test = MultiAgentDataset([str(i) for i in range(20)], False, length=wandb.config.dataset_size), PairedImageDataset(True)
 
-    train_dataloader = DataLoader(train, batch_size=wandb.config.batch_size, shuffle=True)
+    train_dataloader = DataLoader(train, batch_size=wandb.config.batch_size, shuffle=False)
 
     icm = ICM(3, 4, 0.8, 0.2, False, 256, 0.2, 32)
     icm = icm.to("cuda:0")
@@ -93,4 +97,4 @@ def main():
 
 
 sweep_id = wandb.sweep(sweep=sweep_configuration, project='Fixated doom sweeps')
-wandb.agent(sweep_id, function=main, count=10)
+wandb.agent(sweep_id, function=main, count=32)

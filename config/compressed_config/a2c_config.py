@@ -7,7 +7,7 @@ LR = 0.0007 # was 0.0007
 
 # Number of forward steps in A3C (default: 20):
 # SB3
-NUM_STEPS = 5 # 20
+NUM_STEPS = 20 # 20
 
 # Number of agents in A2C
 # SB3
@@ -23,7 +23,7 @@ GAE_LAMBDA = 1.
 
 # Entropy coef
 # SB3; Was 0.0005
-ENTROPY_COEF = 0.0005
+ENTROPY_COEF = 0.01
 
 # Value loss coefficient
 # SB3
