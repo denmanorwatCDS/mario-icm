@@ -61,7 +61,6 @@ class LoggerCallback(BaseCallback):
         self.episode_lengths = np.zeros(self.quantity_of_agents)
 
     def _on_training_start(self):
-        wandb.init(project=self.wandb_project_name, config=self.config)
         print(self.model.device)
 
     def log_timer(self, log):

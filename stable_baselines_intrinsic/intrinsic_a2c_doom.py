@@ -161,9 +161,8 @@ class intrinsic_A2C(A2C):
             int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
             int_reward = np.clip(int_reward, 0, 1)
             int_reward[dones == True] = 0
-            rewards = int_reward * self.intrinsic_reward_coef + ext_reward * (1 - self.intrinsic_reward_coef)
-        return rewards, int_reward * self.intrinsic_reward_coef, ext_reward * (
-                    1 - self.intrinsic_reward_coef), int_reward, ext_reward
+            rewards = int_reward * self.intrinsic_reward_coef + ext_reward
+        return rewards, int_reward * self.intrinsic_reward_coef, ext_reward, int_reward, ext_reward
 
     def save_batch_for_icm(self, obs, action, new_obs, dones):
         relevant_obs = obs[dones == False]
