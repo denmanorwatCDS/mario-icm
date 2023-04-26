@@ -77,6 +77,7 @@ class ICM(nn.Module):
         self.feature = SimplefeatureNet(temporal_channels, feature_map_qty).train()
         self.freeze_grad = freeze_grad
 
+
         self.action_dim = action_dim
         self.state_dim = self.feature.state_dim
         self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons).train()
@@ -95,6 +96,8 @@ class ICM(nn.Module):
         #with torch.no_grad():
         const_state = self.feature(observation)
         const_next_state = self.feature(next_observation)
+        if self.freeze_grad:
+            const_state, const_next_state = const_state.detach(), const_next_state.detach()
         predicted_state = self.forward_net(const_state, action.detach())
         return action_logits, predicted_state, const_next_state
 
