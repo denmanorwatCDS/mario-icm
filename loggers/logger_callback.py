@@ -74,9 +74,8 @@ class LoggerCallback(BaseCallback):
         motivation_model = self.model.motivation_model
         old_obs, new_obs = (old_obs.to(torch.float32).to(self.model.motivation_device),
                             new_obs.to(torch.float32).to(self.model.motivation_device))
-        predicted_probabilities = motivation_model.get_probability_distribution(old_obs, new_obs)
-        self.step_characteristics["mean/train/raw/Estimated probability of ground truth action"].append(
-            predicted_probabilities[torch.arange(0, performed_actions.shape[-1]), performed_actions].mean().item())
+        metric = motivation_model.get_action_prediction_metric(old_obs, new_obs)
+        self.step_characteristics["mean/train/raw/Estimated probability of ground truth action"].append(metric)
 
     def update_mean_episode_length(self, dones):
         self.episode_lengths[dones==0] += 1
