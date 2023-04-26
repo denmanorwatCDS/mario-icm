@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import wandb
 from stable_baselines3.common.callbacks import BaseCallback
+from torchvision.transforms import Grayscale
 
 class LoggerEvalCallback(BaseCallback):
     def __init__(self, eval_env, eval_freq, global_counter, n_eval_episodes=1):
@@ -13,11 +14,10 @@ class LoggerEvalCallback(BaseCallback):
     
     def _on_step(self):
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
-            mean_reward, _, mean_x_pos, max_x_pos, sampled_observations = evaluate_policy(self.model, self.eval_env, 
+            mean_found_vest, sampled_observations = evaluate_policy(self.model, self.eval_env, 
                                                                    n_eval_episodes=self.n_eval_episodes, deterministic=True)
-            wandb.log({"Evaluation/Mean reward": mean_reward,
-                       "Evaluation/Video": wandb.Video(sampled_observations, fps=30),
-                       "Evaluation/Max x pos": max_x_pos},
+            wandb.log({"Evaluation/Found vest": mean_found_vest,
+                       "Evaluation/Video": wandb.Video(sampled_observations, fps=30)},
                        step = self.global_counter.get_count())
     
 def evaluate_policy(
@@ -25,10 +25,8 @@ def evaluate_policy(
     n_eval_episodes: int = 10,
     deterministic = True,
 ):
-    episode_rewards = []
-    episode_lengths = []
+    found_vest_arr = []
     sampled_observations = []
-    episode_x_pos = [-1 for i in range(n_eval_episodes)]
     for i in range(n_eval_episodes):
         done = np.array([False])
         observation = env.reset()
@@ -37,23 +35,18 @@ def evaluate_policy(
         while not done[0]:
             action, states = model.predict(observation, deterministic=deterministic)
             observation, reward, done, info = env.step(action)
+            gray_observation = observation[:, 9:10]*0.2989 + observation[:, 10:11]*0.5870 + observation[:, 11:]*0.1140
             current_reward += reward
             current_length += 1
-            episode_x_pos[i] = max(episode_x_pos[i], info[0]["x_pos"])
             if (i+1) % n_eval_episodes == 0:
-                sampled_observations.append(np.transpose(observation, axes=(0, 3, 1, 2)).squeeze()[-1:])
+                sampled_observations.append(gray_observation)
         if done[0]:
-            episode_rewards.append(current_reward)
-            episode_lengths.append(current_length)
+            found_vest = 1 if info[0]["elapsed_step"] != 525 else 0 
+            found_vest_arr.append(found_vest)
     
-    episode_rewards = np.array(episode_rewards)
-    episode_lengths = np.array(episode_lengths)
-    episode_x_pos = np.array(episode_x_pos)
-    mean_episode_x_pos = np.mean(episode_x_pos)
-    max_episode_x_pos = np.max(episode_x_pos)
+    found_vest_arr = np.array(found_vest)
     
-    mean_reward = np.mean(episode_rewards)
-    std_reward = np.std(episode_rewards)
+    mean_found_vest = np.mean(found_vest_arr)
 
-    sampled_observations = np.stack(sampled_observations, axis = 0)
-    return mean_reward, std_reward, mean_episode_x_pos, max_episode_x_pos, sampled_observations
+    sampled_observations = np.concatenate(sampled_observations, axis = 0)
+    return mean_found_vest, sampled_observations

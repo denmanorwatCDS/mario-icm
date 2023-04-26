@@ -1,3 +1,5 @@
 wandb/
 .conda/*
 dqn_buffer
+.idea/
+__pycache__/

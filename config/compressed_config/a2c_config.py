@@ -3,42 +3,42 @@ from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 # Learning rate of A2C optimizer
 # SB3+Pathak (One changed parameter)
-LR = 0.0007
+LR=0.0001 # was 0.0007
 
 # Number of forward steps in A3C (default: 20):
 # SB3
-NUM_STEPS = 5 # 20
+NUM_STEPS=20 # 20
 
 # Number of agents in A2C
 # SB3
-NUM_AGENTS = 20
+NUM_AGENTS=20
 
 # Discount factor
 # SB3
-GAMMA = 0.99
+GAMMA=0.99
 
 # Lambda parameter for GAE
 # SB3
-GAE_LAMBDA = 1.
+GAE_LAMBDA=1.
 
 # Entropy coef
-# SB3
-ENTROPY_COEF = 0.01
+# SB3; Was 0.0005
+ENTROPY_COEF=0.001
 
 # Value loss coefficient
 # SB3
-VALUE_LOSS_COEF = 0.25
+VALUE_LOSS_COEF=0.25 # was 0.25
 
 # Max grad norm
 # SB3
-MAX_GRAD_NORM = 0.5
+MAX_GRAD_NORM=0.5
 
 # Use RMS prop
 # SB3 True
-RMS_PROP = False
+RMS_PROP=False
 
 # Policy_kwargs
-POLICY_KWARGS = dict(features_extractor_class=ActorCritic)
+POLICY_KWARGS=dict(features_extractor_class=ActorCritic)
 
 config_dict = {
     "LR": LR,

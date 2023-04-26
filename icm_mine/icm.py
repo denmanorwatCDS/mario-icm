@@ -1,6 +1,7 @@
 import torch.nn.functional as F
 import torch
 from torch import nn
+from torchvision.transforms import Grayscale
 
 DEVICE = torch.device("cpu")
 
@@ -47,6 +48,7 @@ class SimplefeatureNet(nn.Module):
     def __init__(self, temporal_channels, feature_map_qty):
         super(SimplefeatureNet, self).__init__()
         # TODO No normalization. Maybe, they are not needed because of temporal channels
+        self.gray = Grayscale(1)
         self.simple_encoder =\
         nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
                                 out_channels = feature_map_qty, kernel_size = 3, stride = 2, 
@@ -67,7 +69,10 @@ class SimplefeatureNet(nn.Module):
 
     def forward(self, x):
         # WARNING Normalize
-        x = F.normalize(x)
+        #gray_inputs = [self.gray(x[:, :3]), self.gray(x[:, 3:6]), self.gray(x[:, 6:9]), self.gray(x[:, 9:])]
+        #gray_inputs = torch.cat(gray_inputs, dim=1)
+        gray_inputs = x
+        x = gray_inputs/255.
         y = self.simple_encoder(x) #size N, 288
         return y
 
@@ -109,7 +114,7 @@ class ICM(nn.Module):
             self(observation, action, next_observation)
         CE_loss = nn.CrossEntropyLoss()
         # TODO: remove self.action_space_size and self.beta into ICM
-        action_one_hot = F.one_hot(action.flatten(), num_classes = 12).detach()
+        action_one_hot = F.one_hot(action.flatten(), num_classes = self.action_dim).detach()
         self.raw_inverse_loss = CE_loss(predicted_actions, action_one_hot.argmax(dim = 1)).mean()
         inverse_pred_err =\
             self.inv_scale*self.raw_inverse_loss
@@ -151,5 +156,5 @@ class ICM(nn.Module):
                 probabilities = action_logits
             # WARNING because we use softmax as layer of inverse net, we already have probabilities
             else:
-                probabilities = torch.softmax(action_logits, dim=1)
+                probabilities = F.softmax(action_logits)
             return probabilities
