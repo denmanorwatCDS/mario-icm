@@ -7,7 +7,7 @@ from loggers.a2c_logger import A2CLogger
 from loggers.global_counter import GlobalCounter
 from stable_baselines_intrinsic.intrinsic_a2c_doom import intrinsic_A2C
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack
 from icm_mine.icm import ICM
 from stable_baselines3.common.monitor import Monitor
 
@@ -21,6 +21,7 @@ import wandb
 def prepare_env(seed, rank):
     def wrap_env():
         env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=4)
+        print(env.game.get_available_buttons())
         env.reset(seed=seed+rank)
         env = Monitor(env, filename=None)
         env = ObservationWrapper(env)
@@ -34,9 +35,10 @@ sweep_configuration = {
     'name': 'Doom sparse sweep',
     'parameters':
     {
-        'entropy': {'values': [1e-04]}, # 1e-02, 1e-03
-        'seed': {'values': [10, 100, 1000]},
-        'a2c_lr': {"values": [0.0001]} # 0.0001, 0.0007
+        'entropy': {'values': [1e-03]}, # 1e-02, 1e-03
+        'seed': {'values': [10, 100, 1000, 2000, 3000]},
+        'a2c_real_lr': {"values": [0.0001]},
+        'frame_stack': {"values": [1]}# 0.0001, 0.0007
      }
 }
 
@@ -52,9 +54,10 @@ def main():
 
     # Eval and train environments
     env = SubprocVecEnv([prepare_env(wandb.config.seed, i) for i in range(parallel_envs)])
+    env = VecFrameStack(env, wandb.config.frame_stack)
 
     print(env.action_space.n)
-    icm = ICM(env.action_space.n, environment_config.TEMPORAL_CHANNELS,
+    icm = ICM(env.action_space.n, wandb.config.frame_stack,
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False,
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA,
               feature_map_qty=icm_config.FMAP_QTY) \
@@ -65,7 +68,7 @@ def main():
     model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM,
                           intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF,
-                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=0.0001,
+                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=wandb.config.a2c_real_lr,
                           n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA,
                           ent_coef=wandb.config.entropy, vf_coef=a2c_config.VALUE_LOSS_COEF,
                           max_grad_norm=a2c_config.MAX_GRAD_NORM,
@@ -75,7 +78,7 @@ def main():
 
     model.set_logger(
         A2CLogger(log_config.LOSS_LOG_FREQUENCY / a2c_config.NUM_STEPS, None, "stdout", global_counter=global_counter))
-    model.learn(total_timesteps=float(1e7), callback=[LoggerCallback(0, "Doom report", hyperparameters.HYPERPARAMS,
+    model.learn(total_timesteps=float(2e7), callback=[LoggerCallback(0, "Doom report", hyperparameters.HYPERPARAMS,
                                                                      global_counter=global_counter,
                                                                      quantity_of_agents=a2c_config.NUM_AGENTS,
                                                                      log_frequency=log_config.AGENT_LOG_FREQUENCY,
