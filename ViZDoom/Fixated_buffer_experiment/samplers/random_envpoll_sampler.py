@@ -52,11 +52,11 @@ def discrete_to_continuous_action(action):
 envpool_env_id = "VizdoomCustom-v1"
 parallel_envs = 20
 env = envpool.make(envpool_env_id, env_type="gym", num_envs=parallel_envs, seed=environment_config.SEED,
-                       img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
-                       stack_num=4, frame_skip=1,
-                       cfg_path="/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg",
-                       wad_path="/home/dvasilev/doom_icm/mario_icm/maps/my_way_home_dense.wad",
-                       reward_config={"ARMOR": [0., 0.]})
+                   img_height=environment_config.RESIZED_SIZE[0], img_width=environment_config.RESIZED_SIZE[1],
+                   stack_num=4, frame_skip=1,
+                   cfg_path="/mario_icm/ViZDoom/custom_my_way_home.cfg",
+                   wad_path="/mario_icm/ViZDoom/maps/my_way_home_dense.wad",
+                   reward_config={"ARMOR": [0., 0.]})
 wandb.init("EnvPool test")
 prepare_folders(parallel_envs)
 env.spec.id = envpool_env_id

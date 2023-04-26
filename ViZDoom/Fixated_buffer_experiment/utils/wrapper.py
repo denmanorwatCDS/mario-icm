@@ -25,8 +25,7 @@ class ObservationWrapper(gym.Wrapper):
     def process_obs(self, obs):
         obs = obs["rgb"]
         obs = cv2.resize(obs, (42, 42))
-        obs = 0.2989 * obs[:, :, 0:1] + 0.5870 * obs[:, :, 1:2] + 0.1140 * obs[:, :, 2:]
-        obs = obs.astype(np.uint8)
+        obs = obs.reshape((42, 42, 1))
 
         return obs
 

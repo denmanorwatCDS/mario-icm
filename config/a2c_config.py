@@ -1,4 +1,4 @@
-from agents.neural_network_ext import ActorCritic
+from architecture.neural_network_ext import ActorCritic
 from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 # Learning rate of A2C optimizer
@@ -9,7 +9,7 @@ LR=0.0001 # was 0.0007
 # SB3
 NUM_STEPS=20 # 20
 
-# Number of agents in A2C
+# Number of architecture in A2C
 # SB3
 NUM_AGENTS=20
 
@@ -43,7 +43,7 @@ POLICY_KWARGS=dict(features_extractor_class=ActorCritic)
 config_dict = {
     "LR": LR,
     "NUM_STEPS - quantity of rollout steps": NUM_STEPS,
-    "NUM_AGENTS - number of agents, that work in parallel": NUM_AGENTS,
+    "NUM_AGENTS - number of architecture, that work in parallel": NUM_AGENTS,
     "GAMMA - discount factor of reward": GAMMA,
     "GAE_LAMBDA - lambda parameter for GAE": GAE_LAMBDA,
     "ENTROPY_COEF - entropy coefficient of entropy loss": ENTROPY_COEF,

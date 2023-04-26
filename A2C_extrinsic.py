@@ -11,17 +11,15 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack
 from icm_mine.icm import ICM
 from stable_baselines3.common.monitor import Monitor
 
-from config import log_config
-from config.compressed_config import environment_config, a2c_config, icm_config, hyperparameters
+from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
 
-from doom_samples.utils.wrapper import ObservationWrapper
-from vizdoom.gym_wrapper.base_gym_env import VizdoomEnv
+from mario_icm.ViZDoom.Fixated_buffer_experiment.utils.wrapper import ObservationWrapper
+from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
 import wandb
 
 def prepare_env(seed, rank):
     def wrap_env():
-        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/custom_my_way_home.cfg", frame_skip=4)
-        print(env.game.get_available_buttons())
+        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=4)
         env.reset(seed=seed+rank)
         env = Monitor(env, filename=None)
         env = ObservationWrapper(env)
@@ -90,5 +88,5 @@ def main():
     torch.cuda.empty_cache()
 
 if __name__=="__main__":
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project='Doom dense sweep')
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project='Doom-sparse-sweep')
     wandb.agent(sweep_id, function=main, count=12)
