@@ -17,41 +17,34 @@ class Predictor(nn.Module):
 
 
     def forward(self, state, action):
-        action = F.one_hot(action, num_classes = self.action_dim).squeeze()
+        action = F.one_hot(action, num_classes=self.action_dim).squeeze()
 
-        concat_info = torch.cat((state, action), dim = 1)
+        concat_info = torch.cat((state, action), dim=1)
         predicted_state = self.simple_state_predictor(concat_info)
         return predicted_state
 
 
-#TODO: add 256 to config
 class SimpleinverseNet(nn.Module):
-    def __init__(self, state_dim, action_classes, hidden_layer_neurons, use_softmax = True):
+    def __init__(self, state_dim, action_classes, hidden_layer_neurons):
         super(SimpleinverseNet, self).__init__()
         self.simple_classifier = torch.nn.Sequential(nn.Linear(2*state_dim, hidden_layer_neurons),
                                                      nn.ReLU(),
                                                      nn.Linear(hidden_layer_neurons, action_classes))
-        self.use_softmax = use_softmax
 
 
     def forward(self, previous_state, next_state):
         cat_state = torch.cat([previous_state, next_state], 1)
 
-        #WARNING: Authors of the book added softmax here
         processed_state = self.simple_classifier(cat_state)
-        if self.use_softmax:
-            processed_state = F.softmax(processed_state)
         return processed_state
 
 
 class SimplefeatureNet(nn.Module):
     def __init__(self, temporal_channels, feature_map_qty):
         super(SimplefeatureNet, self).__init__()
-        # TODO No normalization. Maybe, they are not needed because of temporal channels
-        self.gray = Grayscale(1)
         self.simple_encoder =\
-        nn.Sequential(nn.Conv2d(in_channels = temporal_channels, 
-                                out_channels = feature_map_qty, kernel_size = 3, stride = 2, 
+        nn.Sequential(nn.Conv2d(in_channels = temporal_channels,
+                                out_channels = feature_map_qty, kernel_size = 3, stride = 2,
                                 padding = 1),
                       nn.ELU(),
                       nn.Conv2d(in_channels = feature_map_qty, out_channels = feature_map_qty, 
@@ -69,27 +62,24 @@ class SimplefeatureNet(nn.Module):
 
     def forward(self, x):
         # WARNING Normalize
-        #gray_inputs = [self.gray(x[:, :3]), self.gray(x[:, 3:6]), self.gray(x[:, 6:9]), self.gray(x[:, 9:])]
-        #gray_inputs = torch.cat(gray_inputs, dim=1)
-        gray_inputs = x
-        x = gray_inputs/255.
+        x = x/255.
         y = self.simple_encoder(x) #size N, 288
         return y
 
 
 class ICM(nn.Module):
     def __init__(self, action_dim, temporal_channels, inv_scale, forward_scale,
-                use_softmax, hidden_layer_neurons, eta, feature_map_qty,):
+                hidden_layer_neurons, eta, feature_map_qty, freeze_grad=False):
         super(ICM, self).__init__()
         self.eta = eta
         self.inv_scale = inv_scale
         self.forward_scale = forward_scale
-        self.use_softmax = use_softmax
         self.feature = SimplefeatureNet(temporal_channels, feature_map_qty).train()
+        self.freeze_grad = freeze_grad
 
         self.action_dim = action_dim
         self.state_dim = self.feature.state_dim
-        self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons, use_softmax=use_softmax).train()
+        self.inverse_net = SimpleinverseNet(self.state_dim, self.action_dim, hidden_layer_neurons).train()
         self.forward_net = Predictor(self.action_dim, self.state_dim, hidden_layer_neurons).train()
 
 
@@ -152,9 +142,5 @@ class ICM(nn.Module):
         with torch.no_grad():
             latent_obs, latent_next_obs = self.feature(observation), self.feature(next_observation)
             action_logits = self.inverse_net(latent_obs, latent_next_obs)
-            if self.use_softmax is True:
-                probabilities = action_logits
-            # WARNING because we use softmax as layer of inverse net, we already have probabilities
-            else:
-                probabilities = F.softmax(action_logits)
+            probabilities = F.softmax(action_logits)
             return probabilities

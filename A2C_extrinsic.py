@@ -56,7 +56,7 @@ def main():
 
     print(env.action_space.n)
     icm = ICM(env.action_space.n, wandb.config.frame_stack,
-              icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE, use_softmax=False,
+              icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE,
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA,
               feature_map_qty=icm_config.FMAP_QTY) \
         .to("cuda:0" if torch.cuda.is_available() else "cpu")
