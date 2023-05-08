@@ -1,5 +1,6 @@
 import torch.nn.functional as F
 import torch
+from mario_icm.icm_mine.architecture_constructors import FeatureNet, InverseNet
 from torch import nn
 import numpy as np
 
@@ -82,15 +83,16 @@ class Predictor(nn.Module):
     def forward(self, state, action):
         if self.discrete:
             action = F.one_hot(action, num_classes=self.action_dim).squeeze()
-
+        batch_size = state.shape[0]
+        state = state.reshape(batch_size, -1)
         concat_info = torch.cat((state, action), dim=1)
         predicted_state = self.simple_state_predictor(concat_info)
         return predicted_state
 
 
 class SimpleinverseNet(nn.Module):
-    def __init__(self, state_dim, action_space, hidden_layer_neurons, discrete=True, pde=False, apply_bounder=True,
-                 additional_fc_layers=0):
+    def __init__(self, input_shape, action_space, discrete=True, pde=False, apply_bounder=True,
+                 group=False, bottleneck=False, fc_qty=1):
         super(SimpleinverseNet, self).__init__()
         if discrete:
             action_classes = action_space.n
@@ -99,30 +101,16 @@ class SimpleinverseNet(nn.Module):
             action_classes = action_space.shape[0]
             bounds = np.concatenate((action_space.low.reshape(-1, 1), action_space.high.reshape(-1, 1)), axis=1)
 
-        self.simple_classifier = torch.nn.Sequential(nn.Linear(2*state_dim, hidden_layer_neurons),
-                                                     nn.ReLU())
-        for i in range(additional_fc_layers):
-            self.simple_classifier.append(torch.nn.Linear(hidden_layer_neurons, hidden_layer_neurons//2))
-            self.simple_classifier.append(torch.nn.ReLU())
-            hidden_layer_neurons = hidden_layer_neurons//2
-
-        if not pde:
-            self.simple_classifier.append(nn.Linear(hidden_layer_neurons, action_classes))
+        output_features = action_classes
         if pde:
-            # Vector of means and deviations
-            mean_and_std_predictor = nn.Linear(hidden_layer_neurons, 2*action_classes)
-            mean_and_std_predictor.bias = torch.nn.Parameter(torch.tensor([0., 0., 0., 0.], requires_grad=True))
-            self.simple_classifier.append(mean_and_std_predictor)
+            output_features = action_classes*2
+        self.simple_classifier = InverseNet(group=group, bottleneck=bottleneck, input_shape=input_shape,
+                                                output_features=output_features, fc_qty=fc_qty)
         if not discrete and apply_bounder:
             if pde:
                 bounds = np.concatenate((np.tile(bounds[0], (2, 1)), np.tile(bounds[1], (2, 1))), axis=0)
-                bounds[2:, 0] = 0
-                bounds[2:, 1] = 10
             bounds = torch.from_numpy(bounds)
             self.simple_classifier.append(Boundify(bounds))
-        
-
-        self.discrete = discrete
 
 
     def forward(self, previous_state, next_state):
@@ -133,40 +121,12 @@ class SimpleinverseNet(nn.Module):
 
 
 class SimplefeatureNet(nn.Module):
-    def __init__(self, obs_shape, feature_map_qty, additional_layers=0):
+    def __init__(self, obs_shape, batch_norm=False, skip_conn=False, consecutive_convs=1, activation=nn.ELU,
+                 total_blocks=4, feature_map_size=32):
         super(SimplefeatureNet, self).__init__()
-        assert additional_layers in [0, 1, 2, 3, 4], "Expected number of additional layers in range from 0 to 4"
-        self.simple_encoder =\
-        nn.Sequential(ConditionalConv2d(in_channels=obs_shape[0],
-                                out_channels=feature_map_qty, kernel_size=3, stride=1,
-                                padding=1, identity=additional_layers <= 0),
-                      nn.Conv2d(in_channels=feature_map_qty if additional_layers>0 else obs_shape[0],
-                                out_channels=feature_map_qty, kernel_size=3, stride=2,
-                                padding=1),
-                      nn.ELU(),
-                      ConditionalConv2d(in_channels=feature_map_qty,
-                                        out_channels=feature_map_qty, kernel_size=3, stride=1,
-                                        padding=1, identity=additional_layers <= 1),
-                      nn.Conv2d(in_channels=feature_map_qty, out_channels=feature_map_qty,
-                                kernel_size=3, stride=2, padding=1),
-                      nn.ELU(),
-                      ConditionalConv2d(in_channels=feature_map_qty,
-                                        out_channels=feature_map_qty, kernel_size=3, stride=1,
-                                        padding=1, identity=additional_layers <= 2),
-                      nn.Conv2d(in_channels=feature_map_qty, out_channels=feature_map_qty,
-                                kernel_size=3, stride=2, padding=1),
-                      nn.ELU(),
-                      ConditionalConv2d(in_channels=feature_map_qty,
-                                        out_channels=feature_map_qty, kernel_size=3, stride=1,
-                                        padding=1, identity=additional_layers <= 3),
-                      nn.Conv2d(in_channels=feature_map_qty, out_channels=feature_map_qty,
-                                kernel_size=3, stride=2, padding=1),
-                      nn.ELU(),
-                      nn.Flatten(start_dim=1)) # 32*3*3
-        with torch.no_grad():
-            output = self.simple_encoder(torch.zeros(obs_shape))
-            self.state_dim = int(torch.tensor(output.shape).prod())
-
+        self.simple_encoder = FeatureNet(obs_shape, batch_norm=batch_norm, skip_conn=skip_conn,
+                                         consecutive_convs=consecutive_convs, activation=activation,
+                                         total_blocks=total_blocks, feature_map_size=feature_map_size)
 
     def forward(self, x):
         # WARNING Normalize
@@ -174,18 +134,28 @@ class SimplefeatureNet(nn.Module):
         y = self.simple_encoder(x) #size N, 288
         return y
 
+    def get_latent(self, x):
+        y = self.forward(x)
+        batch_size = y.shape[0]
+        return y.reshape(batch_size, -1)
+
 
 class ICM(nn.Module):
     def __init__(self, action_space, obs_shape, inv_scale, forward_scale,
-                hidden_layer_neurons, eta, feature_map_qty, discrete=True,
+                hidden_layer_neurons, eta, discrete=True,
                 predict_delta=False, subtract_ema_reward=False, apply_bounder=True,
                 pde=False, pde_regulizer=0., ema_gamma=0.9, freeze_grad=False,
-                additional_conv_layer=0, additional_fc_layers=0):
+                feature_batch_norm=False, feature_skip_conn=False,
+                feature_consecutive_convs=1, feature_total_blocks=4, feature_map_size=32,
+                inverse_group=False, inverse_bottleneck=False, inverse_fc_qty=1
+                ):
         super(ICM, self).__init__()
         self.eta = eta
         self.inv_scale = inv_scale
         self.forward_scale = forward_scale
-        self.feature = SimplefeatureNet(obs_shape, feature_map_qty, additional_layers=additional_conv_layer).train()
+        self.feature = SimplefeatureNet(obs_shape, batch_norm=feature_batch_norm, skip_conn=feature_skip_conn,
+                                        consecutive_convs=feature_consecutive_convs, total_blocks=feature_total_blocks,
+                                        feature_map_size=feature_map_size)
         self.pde_regulizer = pde_regulizer
         self.discrete = discrete
         self.pde = pde
@@ -197,11 +167,12 @@ class ICM(nn.Module):
             self.ema_gamma = ema_gamma
             self.EMA_reward = 0
 
-        self.state_dim = self.feature.state_dim
-        self.inverse_net = SimpleinverseNet(self.state_dim, action_space, hidden_layer_neurons, discrete, 
-                                            apply_bounder=apply_bounder, pde=pde,
-                                            additional_fc_layers=additional_fc_layers).train()
-        self.forward_net = Predictor(action_space, self.state_dim, hidden_layer_neurons, discrete).train()
+        input_shape = self.feature.simple_encoder.get_output_shape()
+        state_dim = torch.tensor(input_shape).prod()
+        self.inverse_net = SimpleinverseNet(input_shape, action_space,
+                                            discrete=discrete, pde=pde, apply_bounder=apply_bounder,
+                                            group=inverse_group, bottleneck=inverse_bottleneck, fc_qty=inverse_fc_qty)
+        self.forward_net = Predictor(action_space, state_dim, hidden_layer_neurons, discrete)
 
         if discrete:
             self.action_dim = action_space.n
@@ -219,8 +190,8 @@ class ICM(nn.Module):
         action_logits = self.inverse_net(state, next_state)
         # TODO: change to detach, maybe torch.no_grad() isn't needed
         #with torch.no_grad():
-        const_state = self.feature(observation)
-        const_next_state = self.feature(next_observation)
+        const_state = self.feature.get_latent(observation)
+        const_next_state = self.feature.get_latent(next_observation)
         if self.freeze_grad:
             const_state, const_next_state = const_state.detach(), const_next_state.detach()
         predicted_state = self.forward_net(const_state, action.detach())

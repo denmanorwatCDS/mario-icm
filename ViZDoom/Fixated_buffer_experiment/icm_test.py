@@ -144,9 +144,8 @@ def main(config=None):
     action_space = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=1).action_space
     obs_shape = (4, 42, 42)
     icm = ICM(action_space, obs_shape, inv_scale=0.8, forward_scale=0.2, hidden_layer_neurons=config.output_neurons,
-              feature_map_qty=config.fmap_size, discrete=config.discrete, pde=config.pde, freeze_grad=config.freeze_grad,
-              eta=0.2, apply_bounder=False, pde_regulizer=config.pde_regulizer, additional_conv_layer=0,
-              additional_fc_layers=3)
+              discrete=config.discrete, pde=config.pde, freeze_grad=config.freeze_grad,
+              eta=0.2, apply_bounder=False, pde_regulizer=config.pde_regulizer)
     icm = icm.to("cuda:0")
 
     optim = torch.optim.Adam(icm.parameters(), lr=config.lr)
