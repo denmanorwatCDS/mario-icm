@@ -20,7 +20,6 @@ class PairedImageDataset(Dataset):
             return len(self.img_labels)
         return self.length
     def __getitem__(self, idx):
-        print(idx)
         start_frame = np.load(self.start_img_dir+"/"+str(idx)+".npy")
         end_frame = np.load(self.end_img_dir+"/"+str(idx)+".npy")
         label = self.img_labels[idx]

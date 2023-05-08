@@ -1,3 +1,4 @@
+import gym.spaces
 import numpy as np
 import torch
 import random
@@ -13,13 +14,13 @@ from stable_baselines3.common.monitor import Monitor
 
 from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
 
-from mario_icm.ViZDoom.Fixated_buffer_experiment.utils.wrapper import ObservationWrapper
+from mario_icm.ViZDoom.utils.wrapper import ObservationWrapper
 from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
 import wandb
 
 def prepare_env(seed, rank):
     def wrap_env():
-        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=4)
+        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=1)
         env.reset(seed=seed+rank)
         env = Monitor(env, filename=None)
         env = ObservationWrapper(env)
@@ -42,23 +43,23 @@ sweep_configuration = {
 
 def main():
     wandb.init()
-    torch.manual_seed(wandb.config.seed)
-    random.seed(wandb.config.seed)
-    np.random.seed(wandb.config.seed)
+    torch.manual_seed(10) #wandb.config.seed
+    random.seed(10) # wandb.config.seed
+    np.random.seed(10) # wandb.config.seed
     parallel_envs = 20  # 20
-    envpool_env_id = "VizdoomCustom-v1"  # SuperMarioBros
+    envpool_env_id = "VizdoomCustom-v1"
     global_counter = GlobalCounter()
     print(vizdoom.scenarios_path)
 
     # Eval and train environments
-    env = SubprocVecEnv([prepare_env(wandb.config.seed, i) for i in range(parallel_envs)])
-    env = VecFrameStack(env, wandb.config.frame_stack)
+    env = SubprocVecEnv([prepare_env(10, i) for i in range(parallel_envs)]) # wandb.config.seed
+    env = VecFrameStack(env, 1) # wandb.config.frame_stack
 
-    print(env.action_space.n)
-    icm = ICM(env.action_space.n, wandb.config.frame_stack,
+    action_space = env.action_space
+    icm = ICM(action_space, 1, # wandb.config.frame_stack
               icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE,
               hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA,
-              feature_map_qty=icm_config.FMAP_QTY) \
+              feature_map_qty=icm_config.FMAP_QTY, discrete=False) \
         .to("cuda:0" if torch.cuda.is_available() else "cpu")
 
     policy_kwargs = a2c_config.POLICY_KWARGS
@@ -66,13 +67,13 @@ def main():
     model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM,
                           intrinsic_reward_coef=icm_config.INTRINSIC_REWARD_COEF,
-                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=wandb.config.a2c_real_lr,
+                          warmup_steps=icm_config.WARMUP, global_counter=global_counter, learning_rate=0.0001, # wandb.config.a2c_real_lr
                           n_steps=a2c_config.NUM_STEPS, gamma=a2c_config.GAMMA, gae_lambda=a2c_config.GAE_LAMBDA,
-                          ent_coef=wandb.config.entropy, vf_coef=a2c_config.VALUE_LOSS_COEF,
+                          ent_coef=0.001, vf_coef=a2c_config.VALUE_LOSS_COEF, # wandb.config.entropy
                           max_grad_norm=a2c_config.MAX_GRAD_NORM,
                           use_rms_prop=a2c_config.RMS_PROP, verbose=1, policy_kwargs=policy_kwargs,
                           device=environment_config.MODEL_DEVICE,
-                          motivation_device=environment_config.MOTIVATION_DEVICE, seed=wandb.config.seed)
+                          motivation_device=environment_config.MOTIVATION_DEVICE, seed=10) # wandb.config.seed
 
     model.set_logger(
         A2CLogger(log_config.LOSS_LOG_FREQUENCY / a2c_config.NUM_STEPS, None, "stdout", global_counter=global_counter))
@@ -89,4 +90,5 @@ def main():
 
 if __name__=="__main__":
     sweep_id = wandb.sweep(sweep=sweep_configuration, project='Doom-sparse-sweep')
-    wandb.agent(sweep_id, function=main, count=12)
+    main()
+    #wandb.agent(sweep_id, function=main, count=12)

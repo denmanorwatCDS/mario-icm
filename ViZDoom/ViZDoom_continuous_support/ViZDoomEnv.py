@@ -44,6 +44,8 @@ class VizdoomEnv(gym.Env):
         """
         self.frame_skip = frame_skip
         self.render_mode = render_mode
+        self.BOUNDS = {vzd.Button.MOVE_FORWARD_BACKWARD_DELTA: [-100., 100.],
+                       vzd.Button.TURN_LEFT_RIGHT_DELTA: [-90, 90]}
 
         # init game
         self.game = vzd.DoomGame()
@@ -94,15 +96,14 @@ class VizdoomEnv(gym.Env):
         assert self.state is not None, "Call `reset` before using `step` method."
 
         # convert action to vizdoom action space (one hot)
-        act = [0 for _ in range(self.action_space.n)]
-        act[action] = 1
-
-        reward = self.game.make_action(act, self.frame_skip)
+        env_action = self.__build_env_action(action)
+        if self.num_delta_buttons>0:
+            env_action = (env_action*self.translation_std)+self.translation_mean
+        reward = self.game.make_action(env_action, self.frame_skip)
         self.state = self.game.get_state()
         done = self.game.is_episode_finished()
 
         return self.__collect_observations(), reward, done, {}
-
 
 
     def reset(
@@ -247,8 +248,16 @@ class VizdoomEnv(gym.Env):
         """
         return continuous action space: Box(float32.min, float32.max, (num_delta_buttons,), float32)
         """
-        return gym.spaces.Box(np.finfo(np.float32).min, np.finfo(np.float32).max, (self.num_delta_buttons,),
-                              dtype=np.float32)
+        delta_buttons, lower_bounds, higher_bounds = [], [], []
+        for button in self.game.get_available_buttons():
+            if vzd.is_delta_button(button) and button not in delta_buttons:
+                delta_buttons.append(button)
+                bounds = self.BOUNDS[button]
+                lower_bounds.append(bounds[0]), higher_bounds.append(bounds[1])
+        self.lower_bounds, self.higher_bounds = np.array(lower_bounds), np.array(higher_bounds)
+        self.translation_mean = (self.higher_bounds+self.lower_bounds)/2
+        self.translation_std = (self.higher_bounds-self.lower_bounds)/2
+        return gym.spaces.Box(-1, 1, shape=(len(lower_bounds), ), dtype=np.float32)
 
     def __get_action_space(self):
         """
@@ -342,7 +351,8 @@ class VizdoomEnv(gym.Env):
                 agent_action = self.button_map[agent_action]
 
             # binary actions offset by number of delta buttons
-            env_action[self.num_delta_buttons:] = agent_action
+            env_action[self.num_delta_buttons:] = 0
+            env_action[self.num_delta_buttons+agent_action] = 1
 
     def __parse_delta_buttons(self, env_action, agent_action):
         if self.num_delta_buttons != 0:

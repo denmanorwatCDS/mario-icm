@@ -150,7 +150,7 @@ class intrinsic_A2C(A2C):
         else:
             int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
             int_reward = np.clip(int_reward, 0, 1)
-            int_reward[dones == True] = 0
+            int_reward[dones==True] = 0
             rewards = int_reward * self.intrinsic_reward_coef + ext_reward
         return rewards, int_reward * self.intrinsic_reward_coef, ext_reward, int_reward, ext_reward
 
