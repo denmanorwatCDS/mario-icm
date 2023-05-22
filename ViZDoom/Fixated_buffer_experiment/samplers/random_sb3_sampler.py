@@ -41,7 +41,7 @@ def save_action_array(action_array, is_test = False):
 
 def prepare_env(seed, rank):
     def wrap_env():
-        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=1)
+        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=10)
         env.reset(seed=seed+rank)
         env = Monitor(env, filename=None)
         env = ObservationWrapper(env)

@@ -3,3 +3,5 @@ wandb/
 dqn_buffer
 .idea/
 __pycache__/
+Action_examples/
+fixated_buffer_image_logs/

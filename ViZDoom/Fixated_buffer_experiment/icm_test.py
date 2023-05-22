@@ -3,6 +3,7 @@ import torch.optim
 from mario_icm.ViZDoom.Fixated_buffer_experiment.custom_dataset.stable_buffer import PairedImageDataset, MultiAgentDataset
 from torch.utils.data import DataLoader
 from mario_icm.icm_mine.icm import ICM
+from mario_icm.icm_old.icm import ICM_Old
 from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
 from sklearn.neighbors import KernelDensity
 import numpy as np
@@ -143,9 +144,14 @@ def main(config=None):
     train_dataloader = DataLoader(train, batch_size=config.batch_size, shuffle=False)
     action_space = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=1).action_space
     obs_shape = (4, 42, 42)
+    """
+    icm = ICM_Old(action_space.n, 4, 0.8, 0.2, use_softmax=False, hidden_layer_neurons=256, eta=0.2, feature_map_qty=32)
+    """
     icm = ICM(action_space, obs_shape, inv_scale=0.8, forward_scale=0.2, hidden_layer_neurons=config.output_neurons,
               discrete=config.discrete, pde=config.pde, freeze_grad=config.freeze_grad,
-              eta=0.2, apply_bounder=False, pde_regulizer=config.pde_regulizer)
+              eta=0.2, apply_bounder=False, pde_regulizer=config.pde_regulizer,
+              inverse_bottleneck=False, inverse_group=False, inverse_fc_qty=2,
+              feature_skip_conn=False, feature_consecutive_convs=1, feature_batch_norm=False, feature_total_blocks=4)
     icm = icm.to("cuda:0")
 
     optim = torch.optim.Adam(icm.parameters(), lr=config.lr)
@@ -159,15 +165,15 @@ if __name__ == "__main__":
         def __init__(self):
             self.batch_size = 500
             self.lr = 0.001
-            self.dataset_size = 100_000
+            self.dataset_size = 1_000_000
             self.fmap_size = 32
             self.output_neurons = 256
             self.pde = False
             self.freeze_grad = False
             self.pde_regulizer = 0.
             self.apply_bounder = True
-            self.discrete = False
-            self.learning_steps=100_000
+            self.discrete = True
+            self.learning_steps=10_000
             
     config = Mock()
     main(config)

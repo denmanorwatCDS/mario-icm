@@ -241,7 +241,7 @@ class ICM(nn.Module):
         with torch.no_grad():
             predicted_state =\
                 self.forward_net(self.feature(observation), action)
-            real_state = self.feature(next_observation)
+            real_state = torch.flatten(self.feature(next_observation), start_dim=1)
             intrinsic_reward =\
                 self.eta*((predicted_state-real_state)**2).sum(dim=1).cpu().detach().numpy()
 
@@ -280,6 +280,12 @@ class ICM(nn.Module):
                 metric = ((((actions_representation-actions)**2).sum(axis=1))**(1/2)).mean()
                 metric_values.append(metric)
             return dict(zip(metric_names, metric_values))
+
+    def get_probability_distribution(self, old_obs, new_obs, actions):
+        latent_obs, latent_next_obs = self.feature(old_obs), self.feature(new_obs)
+        output = self.inverse_net(latent_obs, latent_next_obs)
+        probabilities = F.softmax(output)[:, actions]
+        return probabilities.cpu().mean().item()
 
     def get_grad_norm(self):
         total_norm = 0

@@ -29,7 +29,7 @@ GRAD_NORM=40.0
 WARMUP=0
 
 # Intrinsic reward coef:
-INTRINSIC_REWARD_COEF=0.
+INTRINSIC_REWARD_COEF=1.
 
 config_dict = {
     "ETA - multiplier of intrinsic reward": ETA,

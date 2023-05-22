@@ -10,6 +10,7 @@ from stable_baselines_intrinsic.intrinsic_a2c_doom import intrinsic_A2C
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack
 from icm_mine.icm import ICM
+#from icm_old.icm import ICM
 from stable_baselines3.common.monitor import Monitor
 
 from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
@@ -20,7 +21,7 @@ import wandb
 
 def prepare_env(seed, rank):
     def wrap_env():
-        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=1)
+        env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg", frame_skip=4)
         env.reset(seed=seed+rank)
         env = Monitor(env, filename=None)
         env = ObservationWrapper(env)
@@ -55,13 +56,19 @@ def main():
     env = SubprocVecEnv([prepare_env(10, i) for i in range(parallel_envs)]) # wandb.config.seed
     env = VecFrameStack(env, 1) # wandb.config.frame_stack
 
-    action_space = env.action_space
-    icm = ICM(action_space, 1, # wandb.config.frame_stack
-              icm_config.INVERSE_SCALE, icm_config.FORWARD_SCALE,
-              hidden_layer_neurons=icm_config.HIDDEN_LAYERS, eta=icm_config.ETA,
-              feature_map_qty=icm_config.FMAP_QTY, discrete=False) \
+    action_space = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home.cfg",
+                              frame_skip=1).action_space
+    obs_shape = (1, 42, 42)
+    icm = ICM(action_space, obs_shape, inv_scale=icm_config.INVERSE_SCALE, forward_scale=icm_config.FORWARD_SCALE,
+              hidden_layer_neurons=icm_config.HIDDEN_LAYERS,
+              discrete=True, pde=False, freeze_grad=False,
+              eta=icm_config.ETA, apply_bounder=False, pde_regulizer=0.,
+              inverse_bottleneck=False, inverse_group=False, inverse_fc_qty=2,
+              feature_skip_conn=False, feature_consecutive_convs=1, feature_batch_norm=False, feature_total_blocks=4) \
         .to("cuda:0" if torch.cuda.is_available() else "cpu")
-
+    """
+    icm = ICM(action_space.n, 1, 0.8, 0.2, False, 256, 0.2, 32).to("cuda:0" if torch.cuda.is_available() else "cpu")
+    """
     policy_kwargs = a2c_config.POLICY_KWARGS
 
     model = intrinsic_A2C(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR,
@@ -89,6 +96,6 @@ def main():
     torch.cuda.empty_cache()
 
 if __name__=="__main__":
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project='Doom-sparse-sweep')
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project='mario_icm-ViZDoom_Fixated_buffer_experiment')
     main()
     #wandb.agent(sweep_id, function=main, count=12)
