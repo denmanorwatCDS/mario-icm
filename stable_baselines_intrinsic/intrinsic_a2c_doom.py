@@ -16,8 +16,7 @@ class intrinsic_A2C(A2C):
     def __init__(self, policy, env, motivation_model, motivation_lr, motivation_grad_norm, intrinsic_reward_coef, warmup_steps, 
                  global_counter, learning_rate = 7e-4, n_steps = 5, gamma = 0.99, gae_lambda = 1.0, ent_coef = 0.0, vf_coef = 0.5,
                  max_grad_norm = 0.5, rms_prop_eps = 1e-5, use_rms_prop = True, use_sde = False, sde_sample_freq = -1, 
-                 normalize_advantage = False,
-                 stats_window_size=100,
+                 normalize_advantage = False, stats_window_size=100,
                  tensorboard_log = None, policy_kwargs = None, verbose = 0,
                  seed = None, device = "auto", motivation_device="cuda:0", _init_setup_model = True):
         super().__init__(policy, env, learning_rate, n_steps, gamma, gae_lambda, 

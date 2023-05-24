@@ -1,59 +1,50 @@
-import warnings
-from typing import Any, Dict, Optional, Type, TypeVar, Union
-
-import numpy as np
 import torch as th
 from gym import spaces
 from torch.nn import functional as F
+from stable_baselines3.ppo.ppo import PPO
+import numpy as np
 
 from stable_baselines3.common.on_policy_algorithm import OnPolicyAlgorithm
 from stable_baselines3.common.policies import ActorCriticCnnPolicy, ActorCriticPolicy, BasePolicy, MultiInputActorCriticPolicy
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
-from stable_baselines3.common.utils import explained_variance, get_schedule_fn
-from stable_baselines3.ppo.ppo import PPO
+from stable_baselines3.common.utils import explained_variance
 from stable_baselines3.common.utils import obs_as_tensor
-from torch.nn.utils import clip_grad_norm_
 
-class Intrinsic_PPO(PPO):
-    def __init__(
-        self,
-        policy: Union[str, Type[ActorCriticPolicy]],
-        env: Union[GymEnv, str],
-        motivation_model,
-        motivation_lr,
-        motivation_grad_norm,
-        intrinsic_reward_coef,
-        warmup_steps,
-        global_counter,
-        learning_rate: Union[float, Schedule] = 3e-4,
-        n_steps: int = 2048,
-        batch_size: int = 64,
-        n_epochs: int = 10,
-        gamma: float = 0.99,
-        gae_lambda: float = 0.95,
-        clip_range: Union[float, Schedule] = 0.2,
-        clip_range_vf: Union[None, float, Schedule] = None,
-        normalize_advantage: bool = True,
-        ent_coef: float = 0.0,
-        vf_coef: float = 0.5,
-        max_grad_norm: float = 0.5,
-        use_sde: bool = False,
-        sde_sample_freq: int = -1,
-        target_kl: Optional[float] = None,
-        tensorboard_log: Optional[str] = None,
-        policy_kwargs: Optional[Dict[str, Any]] = None,
-        verbose: int = 0,
-        seed: Optional[int] = None,
-        device: Union[th.device, str] = "auto",
-        motivation_device="cuda:0",
-        _init_setup_model: bool = True,
-    ):
-        super().__init__(
-            policy, env, learning_rate, n_steps, batch_size, n_epochs, gamma, gae_lambda, clip_range,
-            clip_range_vf, normalize_advantage, ent_coef, vf_coef, max_grad_norm, use_sde,
-            sde_sample_freq, target_kl, tensorboard_log, policy_kwargs, verbose,
-            seed, device, _init_setup_model
-        )
+from torch.nn.utils import clip_grad_norm_
+class intrinsic_PPO(PPO):
+    def __init__(self, policy, env, motivation_model, motivation_lr, motivation_grad_norm,
+                 intrinsic_reward_coef, warmup_steps, global_counter, learning_rate = 3e-4,
+                 n_steps = 2048, batch_size = 64, n_epochs = 10, gamma = 0.99, gae_lambda = 0.95,
+                 clip_range = 0.2, clip_range_vf = None, normalize_advantage = True, ent_coef = 0.0,
+                 vf_coef = 0.5, max_grad_norm = 0.5, use_sde = False, sde_sample_freq = -1,
+                 target_kl = None, stats_window_size = 100, tensorboard_log = None,
+                 policy_kwargs = None, verbose = 0, seed = None, device = "auto",
+                 motivation_device="cuda:0", _init_setup_model = True,):
+        super().__init__(policy=policy,
+                     env=env,
+                     learning_rate=learning_rate,
+                     n_steps=n_steps,
+                     batch_size=batch_size,
+                     n_epochs=n_epochs,
+                     gamma=gamma,
+                     gae_lambda=gae_lambda,
+                     clip_range=clip_range,
+                     clip_range_vf=clip_range_vf,
+                     normalize_advantage = normalize_advantage,
+                     ent_coef=ent_coef,
+                     vf_coef=vf_coef,
+                     max_grad_norm=max_grad_norm,
+                     use_sde=use_sde,
+                     sde_sample_freq=sde_sample_freq,
+                     target_kl=target_kl,
+                     stats_window_size=stats_window_size,
+                     tensorboard_log=tensorboard_log,
+                     policy_kwargs=policy_kwargs,
+                     verbose=verbose,
+                     seed=seed,
+                     device=device,
+                     _init_setup_model=_init_setup_model,)
+
         self.motivation_model = motivation_model
         self.motivation_device = motivation_device
         self.batch_for_icm = {"old obs": [], "action": [], "new obs": []}
@@ -75,7 +66,6 @@ class Intrinsic_PPO(PPO):
         Collect experiences using the current policy and fill a ``RolloutBuffer``.
         The term rollout here refers to the model-free notion and should not
         be used with the concept of rollout used in model-based RL or planning.
-
         :param env: The training environment
         :param callback: Callback that will be called at each step
             (and at the beginning and end of the rollout)
@@ -114,10 +104,11 @@ class Intrinsic_PPO(PPO):
                 clipped_actions = np.clip(actions, self.action_space.low, self.action_space.high)
 
             new_obs, rewards, dones, infos = env.step(clipped_actions)
+            self.debug(dones, rewards)
+            # Reset doom reward
 
-            rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward = \
+            rewards, int_reward, ext_reward, raw_int_reward, raw_ext_reward =\
                 self.calculate_new_reward(obs_tensor, clipped_actions, new_obs, rewards, dones)
-
 
             self.num_timesteps += env.num_envs
 
@@ -137,9 +128,9 @@ class Intrinsic_PPO(PPO):
             # see GitHub issue #633
             for idx, done in enumerate(dones):
                 if (
-                    done
-                    and infos[idx].get("terminal_observation") is not None
-                    and infos[idx].get("TimeLimit.truncated", False)
+                        done
+                        and infos[idx].get("terminal_observation") is not None
+                        and infos[idx].get("TimeLimit.truncated", False)
                 ):
                     terminal_obs = self.policy.obs_to_tensor(infos[idx]["terminal_observation"])[0]
                     with th.no_grad():
@@ -160,6 +151,24 @@ class Intrinsic_PPO(PPO):
 
         return True
 
+    def train(self):
+        super().train()
+        old_obs, action_batch, new_obs = self.get_batch_for_icm()
+        icm_loss = self.motivation_model.get_icm_loss(old_obs, action_batch, new_obs)
+        icm_loss_value = icm_loss.detach().item()
+        self.model_optimizer.zero_grad()
+        icm_loss.backward()
+        self.logger.record("train/final/icm_loss", icm_loss_value)
+        self.logger.record("train/final/forward_loss", self.motivation_model.forward_loss.item())
+        self.logger.record("train/final/inverse_loss", self.motivation_model.inverse_loss.item())
+        self.logger.record("train/raw/forward_loss", self.motivation_model.raw_forward_loss.item())
+        self.logger.record("train/raw/inverse_loss", self.motivation_model.raw_inverse_loss.item())
+        self.logger.record("train/grads/ICM grad norm (Before clipping)",
+                           self.calculate_grad_norm(self.motivation_model))
+        self.logger.record("train/grads/A2C grad norm (After clipping)", self.calculate_grad_norm(self.policy))
+        clip_grad_norm_(self.motivation_model.parameters(), self.motivation_grad_norm)
+        self.model_optimizer.step()
+
     def calculate_new_reward(self, obs, action, new_obs, rewards, dones):
         new_obs = obs_as_tensor(new_obs, self.motivation_device)
         obs, action, new_obs = (obs.to(th.float).to(self.motivation_device),
@@ -173,10 +182,9 @@ class Intrinsic_PPO(PPO):
         else:
             int_reward = self.motivation_model.intrinsic_reward(obs, action, new_obs)
             int_reward = np.clip(int_reward, 0, 1)
-            int_reward[dones == True] = 0
-            rewards = int_reward * self.intrinsic_reward_coef + ext_reward * (1 - self.intrinsic_reward_coef)
-        return rewards, int_reward * self.intrinsic_reward_coef, ext_reward * (
-                    1 - self.intrinsic_reward_coef), int_reward, ext_reward
+            int_reward[dones==True] = 0
+            rewards = int_reward * self.intrinsic_reward_coef + ext_reward
+        return rewards, int_reward * self.intrinsic_reward_coef, ext_reward, int_reward, ext_reward
 
     def save_batch_for_icm(self, obs, action, new_obs, dones):
         relevant_obs = obs[dones == False]
@@ -203,20 +211,8 @@ class Intrinsic_PPO(PPO):
         total_norm = total_norm ** 0.5
         return total_norm
 
-    def train(self):
-        super().train()
-        old_obs, action_batch, new_obs = self.get_batch_for_icm()
-        icm_loss = self.motivation_model.get_icm_loss(old_obs, action_batch, new_obs)
-        icm_loss_value = icm_loss.detach().item()
-        self.model_optimizer.zero_grad()
-        icm_loss.backward()
-        self.logger.record("train/final/icm_loss", icm_loss_value)
-        self.logger.record("train/final/forward_loss", self.motivation_model.forward_loss.item())
-        self.logger.record("train/final/inverse_loss", self.motivation_model.inverse_loss.item())
-        self.logger.record("train/raw/forward_loss", self.motivation_model.raw_forward_loss.item())
-        self.logger.record("train/raw/inverse_loss", self.motivation_model.raw_inverse_loss.item())
-        self.logger.record("train/grads/ICM grad norm (Before clipping)",
-                           self.calculate_grad_norm(self.motivation_model))
-        self.logger.record("train/grads/A2C grad norm (After clipping)", self.calculate_grad_norm(self.policy))
-        clip_grad_norm_(self.motivation_model.parameters(), self.motivation_grad_norm)
-        self.model_optimizer.step()
+    def debug(self, dones, rewards):
+        self.step_counter += 1
+        if (rewards > 1).any():
+            print("Step number: {}, global steps: {}".format(self.step_counter, self.global_counter.get_count()))
+            print("Dones: {}, Rewards: {}".format(dones, rewards))

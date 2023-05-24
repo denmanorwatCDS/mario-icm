@@ -1,8 +1,5 @@
-import os
-from torchvision.io import read_image
 from torch.utils.data import Dataset
 import numpy as np
-import cv2
 
 class PairedImageDataset(Dataset):
     def __init__(self, is_test=False, length = None):

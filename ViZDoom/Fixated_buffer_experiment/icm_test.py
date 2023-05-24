@@ -3,7 +3,6 @@ import torch.optim
 from mario_icm.ViZDoom.Fixated_buffer_experiment.custom_dataset.stable_buffer import PairedImageDataset, MultiAgentDataset
 from torch.utils.data import DataLoader
 from mario_icm.icm_mine.icm import ICM
-from mario_icm.icm_old.icm import ICM_Old
 from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
 from sklearn.neighbors import KernelDensity
 import numpy as np
@@ -11,6 +10,23 @@ import wandb
 import matplotlib.pyplot as plt
 import os
 
+def visualise_ten_pictures(prev_obs, actions, next_obs):
+    previous_frame = prev_obs[:10, 3:, :, :]
+    next_frame = next_obs[:10, 3:, :, :]
+    actions = actions[:10]
+    titles = ["act1: {:.5f}".format(actions[i, 0]) + "; act2: {:.5f}".format(actions[i, 1]) for i in range(10)]
+    fig = plt.figure(figsize=(50, 50))
+
+    for i in range(10):
+        sub = fig.add_subplot(5, 2, i + 1)
+        divider = torch.zeros((1, 42, 1)).cuda()+255.
+        image = torch.cat((previous_frame[i], divider, next_frame[i]), dim=2).squeeze()
+        image = image.detach().cpu().numpy()
+        sub.imshow(image, cmap="gray")
+        sub.set_title(titles[i])
+    fig.savefig("/home/dvasilev/doom_icm/mario_icm/fixated_buffer_image_logs/examples")
+    plt.close(fig)
+    plt.cla()
 
 def one_batch_train(train_dataloader, ICM, optim):
     start_frames, end_frames, actions = next(iter(train_dataloader))
@@ -44,6 +60,7 @@ def slice_train(train_dataloader, ICM, optim, test_dataloader, config):
                "ICM loss": icm_loss.cpu().detach(),
                "Gradient norm": grad_norm}
             if counter%1000 == 0:
+                visualise_ten_pictures(start_frames, actions, end_frames)
                 predicted_actions, _, _ = ICM.forward(start_frames, actions, end_frames)
                 if config.discrete == False:
                     plot_hist(actions, predicted_actions, np.array([[-1, 1], [-1, 1]]))
@@ -149,7 +166,7 @@ def main(config=None):
     """
     icm = ICM(action_space, obs_shape, inv_scale=0.8, forward_scale=0.2, hidden_layer_neurons=config.output_neurons,
               discrete=config.discrete, pde=config.pde, freeze_grad=config.freeze_grad,
-              eta=0.2, apply_bounder=False, pde_regulizer=config.pde_regulizer,
+              eta=0.02, apply_bounder=False, pde_regulizer=config.pde_regulizer,
               inverse_bottleneck=False, inverse_group=False, inverse_fc_qty=2,
               feature_skip_conn=False, feature_consecutive_convs=1, feature_batch_norm=False, feature_total_blocks=4)
     icm = icm.to("cuda:0")
@@ -172,7 +189,7 @@ if __name__ == "__main__":
             self.freeze_grad = False
             self.pde_regulizer = 0.
             self.apply_bounder = True
-            self.discrete = True
+            self.discrete = False
             self.learning_steps=10_000
             
     config = Mock()

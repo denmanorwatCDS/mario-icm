@@ -65,8 +65,8 @@ def prepare_sampler(env, parallel_envs):
     return sampler
 
 if __name__ == "__main__":
-    parallel_envs = 1
-    is_test = True
+    parallel_envs = 20
+    is_test = False
     env = SubprocVecEnv([prepare_env(10, i) for i in range(parallel_envs)])
     env = VecFrameStack(env, n_stack=4)
     wandb.init("EnvPool test")
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     action_sampler = prepare_sampler(env, parallel_envs)
 
     while i < 50_000:
-        video.append(obs[0])
+        video.append(obs[0, 0:1, :, :])
         actions = action_sampler()
 
         new_obs, rewards, dones, info = env.step(actions)
