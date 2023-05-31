@@ -22,12 +22,13 @@ class A2CLogger(Logger):
     def record(self, key, value, exclude = None):
         if key == "train/n_updates":
             self.calls_quantity = value
-        if self.calls_quantity > self.log_frequency and self.calls_quantity%self.log_frequency==1 and key in self.model_logs.keys():
+        if self.calls_quantity > self.log_frequency and self.calls_quantity%self.log_frequency==0 and key in self.model_logs.keys():
             wandb_log_info = {}
             loss_name, loss_stats = key, self.model_logs[key]
             wandb_log_info["mean/" + key + " of {} steps".format(self.log_frequency)] = np.mean(loss_stats)
             wandb_log_info["std/" + key + " of {} steps".format(self.log_frequency)] = np.std(loss_stats)
             self.model_logs[loss_name] = []
+            steps = step=self.global_counter.get_count()
             wandb.log(wandb_log_info, step=self.global_counter.get_count())
         if key in self.model_logs.keys():
             self.save_data(key, value)

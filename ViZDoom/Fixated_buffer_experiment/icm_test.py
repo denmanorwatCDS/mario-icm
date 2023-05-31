@@ -44,7 +44,7 @@ def one_batch_train(train_dataloader, ICM, optim):
 
 def slice_train(train_dataloader, ICM, optim, test_dataloader, config):
     counter = 0
-    while counter < 100_000:
+    while counter < config.learning_steps:
         for start_frames, end_frames, actions in train_dataloader:
             start_frames, end_frames, actions = start_frames.to("cuda:0"), end_frames.to("cuda:0"), actions.to("cuda:0")
             forward_loss, inverse_loss = ICM.get_losses(start_frames, actions, end_frames)
@@ -134,15 +134,23 @@ def get_image_metrics():
 sweep_configuration = {
     "method": "grid",
     "parameters": {
-        "batch_size": {"values": [500]},
-        "lr": {"values": [1e-03]},
-        "dataset_size": {"values": [500]},
-        "fmap_size": {"values": [32]},
-        "output_neurons": {"values": [256]},
+        "hidden_layer_neurons": {"values": [128]},
+        "inverse_fc_qty": {"values": [2]},
+        "feature_skip_conn": {"values": [False]},
+        "feature_consecutive_convs": {"values": [1]},
+        "feature_batch_norm": {"values": [False]},
+        "feature_total_blocks": {"values": [6]},
         "pde": {"values": [False]},
         "freeze_grad": {"values": [False]},
-        "pde_regulizer": {"values": [0.]},
-        "apply_bounder": {"values": [True]}
+        "inverse_bottleneck": {"values": [True]},
+        "inverse_group": {"values": [True]},
+        "apply_bounder": {"values": [False]},
+        "discrete": {"values": [False]},
+        "learning_steps": {"values": [7_000]},
+        "batch_size": {"values": [500]},
+        "lr": {"values": [0.001]},
+        "dataset_size": {"values": [1_000_000]},
+        "fmap_size": {"values": [32]},
     }
 }
 
@@ -154,6 +162,7 @@ def main(config=None):
     np.random.seed(1)
     wandb.init()
     if config is None:
+        print("Config is none")
         config = wandb.config
 
     train, test = MultiAgentDataset([str(i) for i in range(20)], False, length=config.dataset_size), PairedImageDataset(True)
@@ -164,11 +173,12 @@ def main(config=None):
     """
     icm = ICM_Old(action_space.n, 4, 0.8, 0.2, use_softmax=False, hidden_layer_neurons=256, eta=0.2, feature_map_qty=32)
     """
-    icm = ICM(action_space, obs_shape, inv_scale=0.8, forward_scale=0.2, hidden_layer_neurons=config.output_neurons,
+    icm = ICM(action_space, obs_shape, inv_scale=0.8, forward_scale=0.2, hidden_layer_neurons=config.hidden_layer_neurons,
               discrete=config.discrete, pde=config.pde, freeze_grad=config.freeze_grad,
-              eta=0.02, apply_bounder=False, pde_regulizer=config.pde_regulizer,
-              inverse_bottleneck=False, inverse_group=False, inverse_fc_qty=2,
-              feature_skip_conn=False, feature_consecutive_convs=1, feature_batch_norm=False, feature_total_blocks=4)
+              eta=0.02, apply_bounder=config.apply_bounder, pde_regulizer=0.,
+              inverse_bottleneck=config.inverse_bottleneck, inverse_group=config.inverse_group, inverse_fc_qty=config.inverse_fc_qty,
+              feature_skip_conn=config.feature_skip_conn, feature_consecutive_convs=config.feature_consecutive_convs, 
+              feature_batch_norm=config.feature_batch_norm, feature_total_blocks=config.feature_total_blocks)
     icm = icm.to("cuda:0")
 
     optim = torch.optim.Adam(icm.parameters(), lr=config.lr)
@@ -192,13 +202,12 @@ if __name__ == "__main__":
             self.discrete = False
             self.learning_steps=10_000
             
-    config = Mock()
-    main(config)
-    """
+    #config = Mock()
+    #main()
+    
     sweep_id = wandb.sweep(
         sweep=sweep_configuration,
         project='mario_icm-ViZDoom_Fixated_buffer_experiment'
         )
 
-    wandb.agent(sweep_id, function=main, count=12)
-    """
+    wandb.agent(sweep_id, function=main, count=3)

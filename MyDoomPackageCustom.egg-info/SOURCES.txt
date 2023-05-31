@@ -1,0 +1,5 @@
+setup.py
+MyDoomPackageCustom.egg-info/PKG-INFO
+MyDoomPackageCustom.egg-info/SOURCES.txt
+MyDoomPackageCustom.egg-info/dependency_links.txt
+MyDoomPackageCustom.egg-info/top_level.txt

@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 
-def init_weights(module):
+def fn(module):
     if isinstance(module, nn.Linear):
         linear_init = prepare_linear_init(0.01)
         module.weight.data = linear_init(module.weight.shape)

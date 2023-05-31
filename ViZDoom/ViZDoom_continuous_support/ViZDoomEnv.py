@@ -44,8 +44,8 @@ class VizdoomEnv(gym.Env):
         """
         self.frame_skip = frame_skip
         self.render_mode = render_mode
-        self.BOUNDS = {vzd.Button.MOVE_FORWARD_BACKWARD_DELTA: [-15., 15.],
-                       vzd.Button.TURN_LEFT_RIGHT_DELTA: [-3, 3]}
+        self.BOUNDS = {vzd.Button.MOVE_FORWARD_BACKWARD_DELTA: [0, 20.],
+                       vzd.Button.TURN_LEFT_RIGHT_DELTA: [-5, 5]}
 
         # init game
         self.game = vzd.DoomGame()

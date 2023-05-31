@@ -65,8 +65,8 @@ def prepare_sampler(env, parallel_envs):
     return sampler
 
 if __name__ == "__main__":
-    parallel_envs = 20
-    is_test = False
+    parallel_envs = 1
+    is_test = True
     env = SubprocVecEnv([prepare_env(10, i) for i in range(parallel_envs)])
     env = VecFrameStack(env, n_stack=4)
     wandb.init("EnvPool test")
