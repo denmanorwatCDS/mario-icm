@@ -16,7 +16,7 @@ from stable_baselines3.common.monitor import Monitor
 from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
 
 from mario_icm.ViZDoom.utils.wrapper import ObservationWrapper
-from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
+from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gym import VizdoomEnv
 import wandb
 
 def prepare_env(seed, rank):

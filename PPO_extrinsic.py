@@ -1,4 +1,9 @@
-import gym.spaces
+import sys
+if 'gymnasium' in sys.modules:
+    import gymnasium
+    if gymnasium.__version__=='0.28.1':
+        import gymnasium as gym
+
 import numpy as np
 import torch
 import random
@@ -6,6 +11,7 @@ import vizdoom
 from loggers.logger_callback import LoggerCallback
 from loggers.a2c_logger import A2CLogger
 from loggers.global_counter import GlobalCounter
+from stable_baselines3.ppo.ppo import PPO
 from stable_baselines_intrinsic.intrinsic_ppo_doom import intrinsic_PPO
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack
@@ -15,7 +21,10 @@ from stable_baselines3.common.monitor import Monitor
 from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
 
 from mario_icm.ViZDoom.utils.wrapper import ObservationWrapper
-from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
+if vizdoom.__version__=="1.1.13":
+    from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gym import VizdoomEnv
+elif vizdoom.__version__ == "1.2.0":
+    from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gymnasium import VizdoomEnv
 import wandb
 
 def prepare_env(seed, rank, discrete = True):
@@ -38,8 +47,8 @@ sweep_configuration = {
     'parameters':
     {
         'entropy': {'values': [0]}, # 1e-02, 1e-03
-        'seed': {'values': [100, 200, 300, 400, 500]},
-        'intrinsic_reward_coef': {"values": [0.]}
+        'seed': {'values': [100, 200, 300]},
+        'intrinsic_reward_coef': {"values": [1.]}
      }
 }
 
@@ -58,7 +67,7 @@ def main(config = None):
 
     # Eval and train environments
     env = SubprocVecEnv([prepare_env(config.seed, i, discrete) for i in range(parallel_envs)]) # wandb.config.seed
-    env = VecFrameStack(env, 1) # wandb.config.frame_stack
+    #env = VecFrameStack(env, 1) # wandb.config.frame_stack
 
     action_space = env.action_space
     obs_shape = (1, 42, 42)
@@ -75,6 +84,8 @@ def main(config = None):
     policy_kwargs = a2c_config.POLICY_KWARGS
 
     #n_steps = 2000, icm_n_steps=20
+    model = PPO(policy="CnnPolicy", env=env)
+    """
     model = intrinsic_PPO(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM,
                           intrinsic_reward_coef=config.intrinsic_reward_coef, extrinsic_reward_coef=10.,
@@ -84,7 +95,7 @@ def main(config = None):
                           verbose=1, policy_kwargs=policy_kwargs,
                           device=environment_config.MODEL_DEVICE,
                           motivation_device=environment_config.MOTIVATION_DEVICE, seed=config.seed) # wandb.config.seed
-
+    """
     model.set_logger(
         A2CLogger(1, None, "stdout", global_counter=global_counter))
     model.learn(total_timesteps=float(1e7), callback=[LoggerCallback(0, "Doom report", hyperparameters.HYPERPARAMS,

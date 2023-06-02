@@ -1,4 +1,8 @@
-import gym
+import sys
+if 'gymnasium' in sys.modules:
+    import gymnasium as gym
+elif 'gym' in sys.modules:
+    import gym
 import numpy as np
 import cv2
 

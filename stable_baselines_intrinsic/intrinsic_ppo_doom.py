@@ -1,5 +1,9 @@
+import sys
 import torch as th
-from gym import spaces
+if 'gymnasium' in sys.modules:
+    from gymnasium import spaces
+elif 'gym' in sys.modules:
+    from gym import spaces
 from torch.nn import functional as F
 from stable_baselines3.ppo.ppo import PPO
 import numpy as np
@@ -68,6 +72,7 @@ class intrinsic_PPO(PPO):
         Collect experiences using the current policy and fill a ``RolloutBuffer``.
         The term rollout here refers to the model-free notion and should not
         be used with the concept of rollout used in model-based RL or planning.
+
         :param env: The training environment
         :param callback: Callback that will be called at each step
             (and at the beginning and end of the rollout)
@@ -130,17 +135,24 @@ class intrinsic_PPO(PPO):
             # see GitHub issue #633
             for idx, done in enumerate(dones):
                 if (
-                        done
-                        and infos[idx].get("terminal_observation") is not None
-                        and infos[idx].get("TimeLimit.truncated", False)
+                    done
+                    and infos[idx].get("terminal_observation") is not None
+                    and infos[idx].get("TimeLimit.truncated", False)
                 ):
                     terminal_obs = self.policy.obs_to_tensor(infos[idx]["terminal_observation"])[0]
                     with th.no_grad():
-                        terminal_value = self.policy.predict_values(terminal_obs)[0]
+                        terminal_value = self.policy.predict_values(terminal_obs)[0]  # type: ignore[arg-type]
                     rewards[idx] += self.gamma * terminal_value
 
-            rollout_buffer.add(self._last_obs, actions, rewards, self._last_episode_starts, values, log_probs)
-            self._last_obs = new_obs
+            rollout_buffer.add(
+                self._last_obs,  # type: ignore[arg-type]
+                actions,
+                rewards,
+                self._last_episode_starts,  # type: ignore[arg-type]
+                values,
+                log_probs,
+            )
+            self._last_obs = new_obs  # type: ignore[assignment]
             self._last_episode_starts = dones
 
             if n_steps%self.icm_n_steps==0 and n_steps>0:

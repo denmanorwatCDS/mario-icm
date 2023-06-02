@@ -1,9 +1,13 @@
+import sys
 import torch
 from torch import nn
 from torch.nn import functional as F
 from torchvision.transforms import Grayscale
 
-import gym
+if 'gymnasium' in sys.modules:
+    import gymnasium as gym
+elif 'gym' in sys.modules:
+    import gym
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 class ActorCritic(BaseFeaturesExtractor):

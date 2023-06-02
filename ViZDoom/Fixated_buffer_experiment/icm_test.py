@@ -3,7 +3,7 @@ import torch.optim
 from mario_icm.ViZDoom.Fixated_buffer_experiment.custom_dataset.stable_buffer import PairedImageDataset, MultiAgentDataset
 from torch.utils.data import DataLoader
 from mario_icm.icm_mine.icm import ICM
-from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv import VizdoomEnv
+from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gym import VizdoomEnv
 from sklearn.neighbors import KernelDensity
 import numpy as np
 import wandb
