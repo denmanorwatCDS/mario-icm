@@ -1,3 +1,4 @@
+import gymnasium
 from stable_baselines3.common.callbacks import BaseCallback
 import torch
 import wandb
@@ -22,11 +23,11 @@ class LoggerCallback(BaseCallback):
         self.device = device
         self.fps = fps
         self.gray = Grayscale(1)
+        self.metrics_registered = False
 
         # Theese are calculated on each step
         self.step_characteristics = {"Media/Agent #0 observations": [],
                                      "Media/Environment state of agent #0": [],
-                                     "mean/train/raw/Estimated probability of ground truth action": [],
                                      "Raw/Intrinsic reward of agent #0": [], "Raw/Extrinsic reward of agent #0": [],
                                      "Mix/Intrinsic reward of agent #0": [], "Mix/Extrinsic reward of agent #0": [],
                                      "Mix/Total reward of agent #0": [],
@@ -39,7 +40,6 @@ class LoggerCallback(BaseCallback):
         self.simple_characteristics = ["Raw/Intrinsic reward of agent #0", "Raw/Extrinsic reward of agent #0",
                                        "Mix/Intrinsic reward of agent #0", "Mix/Extrinsic reward of agent #0",
                                        "Mix/Total reward of agent #0",
-                                       "mean/train/raw/Estimated probability of ground truth action",
                                        "Raw/Intrinsic reward", "Raw/Extrinsic reward",
                                        "Raw/Mean episode steps of agent #0", "Raw/Mean episode steps",
                                        "Mix/Intrinsic reward", "Mix/Extrinsic reward", "Mix/Total reward"]
@@ -76,6 +76,17 @@ class LoggerCallback(BaseCallback):
                             new_obs.to(torch.float32).to(self.model.motivation_device))
         metric = motivation_model.get_probability_distribution(old_obs, new_obs, performed_actions)
         self.step_characteristics["mean/train/raw/Estimated probability of ground truth action"].append(metric)
+
+    def update_metrics(self, old_obs, new_obs, performed_actions):
+        motivation_model = self.model.motivation_model
+        old_obs, new_obs = (old_obs.to(torch.float32).to(self.model.motivation_device),
+                            new_obs.to(torch.float32).to(self.model.motivation_device))
+        dict_metric = motivation_model.get_action_prediction_metric(old_obs, new_obs, performed_actions,
+                                                                    prefix="mean/train/raw")
+        self._register_metrics_if_necessary(dict_metric)
+
+        for key, value in dict_metric.items():
+            self.step_characteristics[key].append(value)
 
     def update_mean_episode_length(self, dones):
         self.episode_lengths[dones==0] += 1
@@ -141,7 +152,9 @@ class LoggerCallback(BaseCallback):
             self.locals["obs_tensor"], \
                 torch.as_tensor(self.locals["new_obs"]).to(self.device)
         actions = self.locals["clipped_actions"]
-        self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
+        self.update_metrics(previous_observation, current_observation, actions)
+        #if type(self.training_env.action_space) == gymnasium.spaces.Discrete:
+        #    self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
 
         done = self.locals["dones"][0]
         self.log_video_if_ready(previous_observation, done, None)
@@ -153,4 +166,12 @@ class LoggerCallback(BaseCallback):
             log = {}
             self.process_mean_characteristics(log)
             self.log_timer(log)
+            print(log)
             wandb.log(log, step=self.global_counter.get_count())
+
+    def _register_metrics_if_necessary(self, metrics):
+        if self.metrics_registered is False:
+            for key, value in metrics.items():
+                self.step_characteristics[key] = []
+                self.simple_characteristics.append(key)
+            self.metrics_registered = True

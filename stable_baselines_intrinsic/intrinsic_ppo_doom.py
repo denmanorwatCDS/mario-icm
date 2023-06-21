@@ -170,7 +170,7 @@ class intrinsic_PPO(PPO):
 
     def train(self):
         super().train()
-        self.logger.record("train/grads/A2C grad norm (After clipping)", self.calculate_grad_norm(self.policy))
+        self.logger.record("train/grads/Agent grad norm (After clipping)", self.calculate_grad_norm(self.policy))
 
     def calculate_new_reward(self, obs, action, new_obs, rewards, dones):
         new_obs = obs_as_tensor(new_obs, self.motivation_device)

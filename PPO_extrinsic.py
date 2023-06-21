@@ -1,3 +1,4 @@
+import os
 import sys
 if 'gymnasium' in sys.modules:
     import gymnasium
@@ -9,7 +10,7 @@ import torch
 import random
 import vizdoom
 from loggers.logger_callback import LoggerCallback
-from loggers.a2c_logger import A2CLogger
+from loggers.agent_logger import AgentLogger
 from loggers.global_counter import GlobalCounter
 from stable_baselines3.ppo.ppo import PPO
 from stable_baselines_intrinsic.intrinsic_ppo_doom import intrinsic_PPO
@@ -18,17 +19,29 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack
 from icm_mine.icm import ICM
 from stable_baselines3.common.monitor import Monitor
 
-from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
+from mario_icm.config import agent_config, environment_config, hyperparameters, icm_config, log_config
 
-from mario_icm.ViZDoom.utils.wrapper import ObservationWrapper
-if vizdoom.__version__=="1.1.13":
+from MuJoCo_custom.EgocentricCylinderMaze import EgocentricCylinderMazeEnv
+from MuJoCo_custom.ObservationWrapper import ObservationWrapper as MuJoCoObsWrapper
+
+if 'gym' in sys.modules:
     from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gym import VizdoomEnv
-elif vizdoom.__version__ == "1.2.0":
+    from mario_icm.ViZDoom.utils.wrapper_gym import ObservationWrapper
+elif 'gymnasium' in sys.modules:
     from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gymnasium import VizdoomEnv
+    from mario_icm.ViZDoom.utils.wrapper_gymnasium import ObservationWrapper
+    from gymnasium.wrappers import TimeLimit
+    
 import wandb
 
-def prepare_env(seed, rank, discrete = True):
+def prepare_env(seed, rank, discrete = True, vizdoom = True):
     def wrap_env():
+        if not vizdoom:
+            env = EgocentricCylinderMazeEnv(render_mode="rgb_array", continuing_task=False)
+            env.reset(seed=seed+rank)
+            env = TimeLimit(env, max_episode_steps=1000)
+            env = MuJoCoObsWrapper(env)
+            return env
         if discrete:
             env = VizdoomEnv("/home/dvasilev/doom_icm/mario_icm/ViZDoom/custom_my_way_home_discrete.cfg", frame_skip=4)
         else:
@@ -61,12 +74,11 @@ def main(config = None):
     np.random.seed(config.seed) # wandb.config.seed
     parallel_envs = 20  # 20
     discrete = False
-    envpool_env_id = "VizdoomCustom-v1"
+    vizdoom = False
     global_counter = GlobalCounter()
-    print(vizdoom.scenarios_path)
 
     # Eval and train environments
-    env = SubprocVecEnv([prepare_env(config.seed, i, discrete) for i in range(parallel_envs)]) # wandb.config.seed
+    env = SubprocVecEnv([prepare_env(config.seed, i, discrete, vizdoom=vizdoom) for i in range(parallel_envs)]) # wandb.config.seed
     #env = VecFrameStack(env, 1) # wandb.config.frame_stack
 
     action_space = env.action_space
@@ -81,11 +93,9 @@ def main(config = None):
     """
     icm = ICM(action_space.n, 1, 0.8, 0.2, False, 256, 0.2, 32).to("cuda:0" if torch.cuda.is_available() else "cpu")
     """
-    policy_kwargs = a2c_config.POLICY_KWARGS
+    policy_kwargs = agent_config.POLICY_KWARGS
 
     #n_steps = 2000, icm_n_steps=20
-    model = PPO(policy="CnnPolicy", env=env)
-    """
     model = intrinsic_PPO(policy="CnnPolicy", env=env, motivation_model=icm, motivation_lr=icm_config.LR,
                           motivation_grad_norm=icm_config.GRAD_NORM,
                           intrinsic_reward_coef=config.intrinsic_reward_coef, extrinsic_reward_coef=10.,
@@ -95,12 +105,11 @@ def main(config = None):
                           verbose=1, policy_kwargs=policy_kwargs,
                           device=environment_config.MODEL_DEVICE,
                           motivation_device=environment_config.MOTIVATION_DEVICE, seed=config.seed) # wandb.config.seed
-    """
     model.set_logger(
-        A2CLogger(1, None, "stdout", global_counter=global_counter))
+        AgentLogger(log_config.AGENT_LOG_FREQUENCY, None, "stdout", global_counter=global_counter))
     model.learn(total_timesteps=float(1e7), callback=[LoggerCallback(0, "Doom report", hyperparameters.HYPERPARAMS,
                                                                      global_counter=global_counter,
-                                                                     quantity_of_agents=a2c_config.NUM_AGENTS,
+                                                                     quantity_of_agents=agent_config.NUM_AGENTS,
                                                                      log_frequency=log_config.AGENT_LOG_FREQUENCY,
                                                                      video_submission_frequency=log_config.VIDEO_SUBMISSION_FREQUENCY,
                                                                      device=environment_config.MOTIVATION_DEVICE,
@@ -111,13 +120,14 @@ def main(config = None):
 
 if __name__=="__main__":
 
+    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
     class Mock():
         def __init__(self):
             self.seed = 100
             self.entropy = 0.
-            self.intrinsic_reward_coef = 0.
+            self.intrinsic_reward_coef = 1.
 
     config = Mock()
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project='ViZDoom_ICM+PPO')
-    #main()
-    wandb.agent(sweep_id, function=main, count=10)
+    #sweep_id = wandb.sweep(sweep=sweep_configuration, project='ViZDoom_ICM+PPO')
+    main(config)
+    #wandb.agent(sweep_id, function=main, count=10)

@@ -4,7 +4,7 @@ import torch
 import random
 import vizdoom
 from loggers.logger_callback import LoggerCallback
-from loggers.a2c_logger import A2CLogger
+from loggers.agent_logger import AgentLogger
 from loggers.global_counter import GlobalCounter
 from stable_baselines_intrinsic.intrinsic_a2c_doom import intrinsic_A2C
 from stable_baselines3.common.utils import set_random_seed
@@ -13,9 +13,9 @@ from icm_mine.icm import ICM
 #from icm_old.icm import ICM
 from stable_baselines3.common.monitor import Monitor
 
-from mario_icm.config import a2c_config, environment_config, hyperparameters, icm_config, log_config
+from mario_icm.config import agent_config, environment_config, hyperparameters, icm_config, log_config
 
-from mario_icm.ViZDoom.utils.wrapper import ObservationWrapper
+from mario_icm.ViZDoom.utils.wrapper_gym import ObservationWrapper
 from mario_icm.ViZDoom.ViZDoom_continuous_support.ViZDoomEnv_gym import VizdoomEnv
 import wandb
 
@@ -83,7 +83,7 @@ def main():
                           motivation_device=environment_config.MOTIVATION_DEVICE, seed=10) # wandb.config.seed
 
     model.set_logger(
-        A2CLogger(log_config.LOSS_LOG_FREQUENCY / a2c_config.NUM_STEPS, None, "stdout", global_counter=global_counter))
+        AgentLogger(log_config.LOSS_LOG_FREQUENCY / a2c_config.NUM_STEPS, None, "stdout", global_counter=global_counter))
     model.learn(total_timesteps=float(2e7), callback=[LoggerCallback(0, "Doom report", hyperparameters.HYPERPARAMS,
                                                                      global_counter=global_counter,
                                                                      quantity_of_agents=a2c_config.NUM_AGENTS,
