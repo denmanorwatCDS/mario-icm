@@ -39,7 +39,7 @@ class ConvBlock(nn.Module):
                 downsampled_x = torch.cat((downsampled_x, zero_padding), dim=1)
         return downsampled_x+block_output
 
-class FeatureNet(nn.Module):
+class FeatureNetwork(nn.Module):
     def __init__(self, obs_shape, batch_norm=False, skip_conn=False, consecutive_convs=1, activation=nn.ELU,
                  total_blocks=4, feature_map_size=32):
         super().__init__()
@@ -61,7 +61,7 @@ class FeatureNet(nn.Module):
     def get_output_shape(self):
         return self.output_shape
 
-class InverseNet(nn.Module):
+class InverseNetwork(nn.Module):
     def __init__(self, group, bottleneck, input_shape, output_features, fc_qty):
         super().__init__()
         self.layers = nn.ModuleList()
@@ -69,7 +69,6 @@ class InverseNet(nn.Module):
         out_channels = in_channels//2
         input_features = torch.tensor(input_shape).prod()*2
         self.input_shape = input_shape
-        #print(input_shape)
         print("Input features to inverse net: {}".format(input_features))
         if group:
             self.layers.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=1,
@@ -84,7 +83,10 @@ class InverseNet(nn.Module):
             print("Input features to inverse net after bottlenecking: {}".format(input_features))
         self.layers.append(nn.Flatten())
         print("Input features to linear layer: {}".format(input_features))
-        for i in range(fc_qty-1):
+        self.layers.append(nn.Linear(input_features, 256))
+        self.layers.append(nn.ELU())
+        input_features = 256
+        for i in range(fc_qty-2):
             self.layers.append(nn.Linear(input_features, input_features//2))
             self.layers.append(nn.ELU())
             input_features = input_features//2

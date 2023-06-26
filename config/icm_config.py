@@ -31,6 +31,10 @@ WARMUP=0
 # Intrinsic reward coef:
 INTRINSIC_REWARD_COEF=1.
 
+# Extrinsic reward coef:
+EXTRINSIC_REWARD_COEF=10.
+
+
 config_dict = {
     "ETA - multiplier of intrinsic reward": ETA,
     "HIDDEN_LAYERS - quantity of neurons in hidden layer of ICM": HIDDEN_LAYERS,
@@ -40,5 +44,6 @@ config_dict = {
     "FORWARD_SCALE - similiar to INVERSE_SCALE, but not only batch, but also features factorization": FORWARD_SCALE,
     "GRAD_NORM - gradient norm clipping for ICM": GRAD_NORM,
     "WARMUP - warmup steps for ICM": WARMUP,
-    "INTRINSIC_REWARD_COEF - intrinsic reward coefficient for model": INTRINSIC_REWARD_COEF
+    "INTRINSIC_REWARD_COEF - intrinsic reward coefficient for model": INTRINSIC_REWARD_COEF,
+    "EXTRINSIC_REWARD_COEF - extrinsic reward coefficient for model": EXTRINSIC_REWARD_COEF
 }

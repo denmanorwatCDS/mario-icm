@@ -1,13 +1,13 @@
 import torch.nn.functional as F
 import torch
-from mario_icm.icm_mine.architecture_constructors import FeatureNet, InverseNet
+from mario_icm.icm_mine.architecture_constructors import FeatureNetwork, InverseNetwork
 from torch import nn
 import numpy as np
 
 DEVICE = torch.device("cpu")
 
-class Boundify(torch.nn.Module):
-    def __init__(self, bounds, bounder):
+class BoundsTranslator(torch.nn.Module):
+    def __init__(self, bounds):
         super().__init__()
         self.mean = (bounds[:, 1] + bounds[:, 0])/2
         self.range = (bounds[:, 1] - bounds[:, 0])/2
@@ -25,7 +25,7 @@ class Identity(torch.nn.Module):
     def forward(self, input):
         return input
 
-class ConditionalConv2d(torch.nn.Module):
+class Conv2dOrIdentity(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding, identity=False):
         super().__init__()
         if identity:
@@ -37,7 +37,7 @@ class ConditionalConv2d(torch.nn.Module):
     def forward(self, input):
         return self.module(input)
 
-def params_to_cov_matrix(stds):
+def get_covariance_matrix(stds):
     action_space = stds.shape[1]
     device = stds.get_device()
     cov_matricies = torch.eye(action_space).repeat(stds.shape[0], 1, 1).to(device)
@@ -45,13 +45,13 @@ def params_to_cov_matrix(stds):
     cov_matricies[:, :, 1][cov_matricies[:, :, 1] == 1] *= stds[:, 1]
     return cov_matricies
 
-def prepare_multivariate_loss(regulizer_coef = 0.):
-    def multivariate_loss(params, ground_truth):
+def prepare_gauss_density_loss(regulizer_coef = 0.):
+    def gauss_density_loss(params, ground_truth):
         batch_size, action_size = ground_truth.shape
         means = params[:, :action_size]
         stds = params[:, action_size:]
         stds = torch.exp(stds)
-        covariance = params_to_cov_matrix(stds)
+        covariance = get_covariance_matrix(stds)
         inv_covariance = torch.linalg.inv(covariance)
         determinant = torch.linalg.det(covariance)
 
@@ -61,15 +61,15 @@ def prepare_multivariate_loss(regulizer_coef = 0.):
         value = value.flatten()
         regulizer = (stds**2).sum(axis=1).mean()**(1/2)*regulizer_coef*(-1)
         return -(bias+log_det+value+regulizer)
-    return multivariate_loss
+    return gauss_density_loss
 
 def mse_loss(input, target):
     return ((input-target)**2).sum(dim=1)
 
 
-class Predictor(nn.Module):
-    def __init__(self, action_space, state_dim, hidden_layer_neurons, discrete):
-        super(Predictor, self).__init__()
+class ForwardModel(nn.Module):
+    def __init__(self, state_dim, action_space, hidden_layer_neurons, discrete):
+        super(ForwardModel, self).__init__()
         self.discrete = discrete
         if discrete:
             self.action_dim = action_space.n
@@ -90,27 +90,30 @@ class Predictor(nn.Module):
         return predicted_state
 
 
-class SimpleinverseNet(nn.Module):
+class InverseModel(nn.Module):
     def __init__(self, input_shape, action_space, discrete=True, pde=False, apply_bounder=True,
                  group=False, bottleneck=False, fc_qty=1):
-        super(SimpleinverseNet, self).__init__()
+        super(InverseModel, self).__init__()
+
+        self.pde = pde
+        self.discrete = discrete
+
         if discrete:
             action_classes = action_space.n
         else:
-            print(action_space)
             action_classes = action_space.shape[0]
             bounds = np.concatenate((action_space.low.reshape(-1, 1), action_space.high.reshape(-1, 1)), axis=1)
 
         output_features = action_classes
         if pde:
             output_features = action_classes*2
-        self.simple_classifier = InverseNet(group=group, bottleneck=bottleneck, input_shape=input_shape,
-                                                output_features=output_features, fc_qty=fc_qty)
+        self.simple_classifier = InverseNetwork(group=group, bottleneck=bottleneck, input_shape=input_shape,
+                                              output_features=output_features, fc_qty=fc_qty)
         if not discrete and apply_bounder:
             if pde:
                 bounds = np.concatenate((np.tile(bounds[0], (2, 1)), np.tile(bounds[1], (2, 1))), axis=0)
             bounds = torch.from_numpy(bounds)
-            self.simple_classifier.append(Boundify(bounds))
+            self.simple_classifier.append(BoundsTranslator(bounds))
 
 
     def forward(self, previous_state, next_state):
@@ -120,13 +123,13 @@ class SimpleinverseNet(nn.Module):
         return action_representation
 
 
-class SimplefeatureNet(nn.Module):
+class FeatureExtractor(nn.Module):
     def __init__(self, obs_shape, batch_norm=False, skip_conn=False, consecutive_convs=1, activation=nn.ELU,
                  total_blocks=4, feature_map_size=32):
-        super(SimplefeatureNet, self).__init__()
-        self.simple_encoder = FeatureNet(obs_shape, batch_norm=batch_norm, skip_conn=skip_conn,
-                                         consecutive_convs=consecutive_convs, activation=activation,
-                                         total_blocks=total_blocks, feature_map_size=feature_map_size)
+        super(FeatureExtractor, self).__init__()
+        self.simple_encoder = FeatureNetwork(obs_shape, batch_norm=batch_norm, skip_conn=skip_conn,
+                                             consecutive_convs=consecutive_convs, activation=activation,
+                                             total_blocks=total_blocks, feature_map_size=feature_map_size)
 
     def forward(self, x):
         # WARNING Normalize
@@ -141,24 +144,17 @@ class SimplefeatureNet(nn.Module):
 
 
 class ICM(nn.Module):
-    def __init__(self, action_space, obs_shape, inv_scale, forward_scale,
-                hidden_layer_neurons, eta, discrete=True,
-                predict_delta=False, subtract_ema_reward=False, apply_bounder=True,
-                pde=False, pde_regulizer=0., ema_gamma=0.9, freeze_grad=False,
-                feature_batch_norm=False, feature_skip_conn=False,
-                feature_consecutive_convs=1, feature_total_blocks=4, feature_map_size=32,
-                inverse_group=False, inverse_bottleneck=False, inverse_fc_qty=1
-                ):
+    def __init__(self, inv_scale, forward_scale,
+                 feature_extractor, inverse_model, forward_model,
+                 eta,
+                 predict_delta=False, subtract_ema_reward=False,
+                 std_regulizer=0., ema_gamma=0.9, freeze_grad=False,):
         super(ICM, self).__init__()
+
         self.eta = eta
         self.inv_scale = inv_scale
         self.forward_scale = forward_scale
-        self.feature = SimplefeatureNet(obs_shape, batch_norm=feature_batch_norm, skip_conn=feature_skip_conn,
-                                        consecutive_convs=feature_consecutive_convs, total_blocks=feature_total_blocks,
-                                        feature_map_size=feature_map_size)
-        self.pde_regulizer = pde_regulizer
-        self.discrete = discrete
-        self.pde = pde
+        self.std_regulizer = std_regulizer
 
         self.freeze_grad = freeze_grad
         self.predict_delta = predict_delta
@@ -167,31 +163,21 @@ class ICM(nn.Module):
             self.ema_gamma = ema_gamma
             self.EMA_reward = 0
 
-        input_shape = self.feature.simple_encoder.get_output_shape()
-        state_dim = torch.tensor(input_shape).prod()
-        self.inverse_net = SimpleinverseNet(input_shape, action_space,
-                                            discrete=discrete, pde=pde, apply_bounder=apply_bounder,
-                                            group=inverse_group, bottleneck=inverse_bottleneck, fc_qty=inverse_fc_qty)
-        self.forward_net = Predictor(action_space, state_dim, hidden_layer_neurons, discrete)
-
-        if discrete:
-            self.action_dim = action_space.n
-        else:
-            self.action_dim = action_space.shape[0]
-
+        self.inverse_net = inverse_model
+        self.forward_net = forward_model
+        self.feature_extractor = feature_extractor
+        self.action_dim = forward_model.action_dim
 
     def forward(self, observation, action, next_observation):
         # It is neccesary to NOT learn encoder when predicting future states 
         # Encoder only learns when it guesses action by pair s_t & s_{t+1}
-        # print("Obervation shape: {}".format(observation.shape))
-        state = self.feature(observation)
-        # print("Latent state shape: {}".format(state.shape))
-        next_state = self.feature(next_observation)
+        state = self.feature_extractor(observation)
+        next_state = self.feature_extractor(next_observation)
         action_logits = self.inverse_net(state, next_state)
         # TODO: change to detach, maybe torch.no_grad() isn't needed
-        #with torch.no_grad():
-        const_state = self.feature.get_latent(observation)
-        const_next_state = self.feature.get_latent(next_observation)
+        # with torch.no_grad():
+        const_state = self.feature_extractor.get_latent(observation)
+        const_next_state = self.feature_extractor.get_latent(next_observation)
         if self.freeze_grad:
             const_state, const_next_state = const_state.detach(), const_next_state.detach()
         predicted_state = self.forward_net(const_state, action.detach())
@@ -201,12 +187,10 @@ class ICM(nn.Module):
 
         return action_logits, predicted_state, const_next_state
 
-
     def get_losses(self, observation, action, next_observation):
         predicted_actions, predicted_states, next_states =\
             self(observation, action, next_observation)
         inverse_pred_err = self.calculate_inverse_loss(predicted_actions, action).mean()
-        # WARNING: Pathak had 1/2, authors of the book hand't!
         self.raw_forward_loss = ((next_states-predicted_states)**2).sum(dim = 1).mean()
         forward_pred_err =\
             self.forward_scale*self.raw_forward_loss
@@ -214,12 +198,12 @@ class ICM(nn.Module):
         return forward_pred_err, inverse_pred_err
 
     def calculate_inverse_loss(self, predicted, actions):
-        if self.discrete:
+        if self.inverse_net.discrete:
             loss = nn.CrossEntropyLoss()
             actions = F.one_hot(actions.flatten(), num_classes=self.action_dim).detach()
             actions = actions.argmax(dim=1)
-        elif self.pde:
-            loss = prepare_multivariate_loss(regulizer_coef=self.pde_regulizer)
+        elif self.inverse_net.pde:
+            loss = prepare_gauss_density_loss(regulizer_coef=self.std_regulizer)
         else:
             loss = mse_loss
         self.raw_inverse_loss = loss(predicted, actions)
@@ -234,14 +218,13 @@ class ICM(nn.Module):
         return forward_loss + inverse_loss
 
     def intrinsic_reward(self, observation, action, next_observation):
-        intrinsic_reward = 0
-        if type(action) == int:
+        if self.inverse_net.discrete:
             action = torch.nn.functional.one_hot(torch.tensor(action), self.action_dim).\
             unsqueeze(dim=0).to(DEVICE)
         with torch.no_grad():
             predicted_state =\
-                self.forward_net(self.feature(observation), action)
-            real_state = torch.flatten(self.feature(next_observation), start_dim=1)
+                self.forward_net(self.feature_extractor(observation), action)
+            real_state = torch.flatten(self.feature_extractor(next_observation), start_dim=1)
             intrinsic_reward =\
                 self.eta*((predicted_state-real_state)**2).sum(dim=1).cpu().detach().numpy()
 
@@ -250,15 +233,14 @@ class ICM(nn.Module):
             intrinsic_reward -= self.EMA_reward
         return intrinsic_reward
 
-
     def get_action_prediction_metric(self, observation, next_observation, actions, prefix = ""):
         with torch.no_grad():
-            latent_obs, latent_next_obs = self.feature(observation), self.feature(next_observation)
+            latent_obs, latent_next_obs = self.feature_extractor(observation), self.feature_extractor(next_observation)
             output = self.inverse_net(latent_obs, latent_next_obs)
             metric_names = []
             metric_values = []
             prefix = prefix + "/" if prefix != "" else prefix
-            if self.discrete:
+            if self.inverse_net.discrete:
                 # Mean probability of right action
                 probabilities = F.softmax(output)
                 metric = probabilities[torch.arange(0, actions.shape[-1]), actions].mean().item()
@@ -266,7 +248,7 @@ class ICM(nn.Module):
                 metric_values.append(metric)
             else:
                 # MSE of predicted actions vs preformed actions
-                if self.pde:
+                if self.inverse_net.pde:
                     actions_representation = output[:, :self.action_dim].detach().cpu().numpy()
                     stds = output[:, self.action_dim:].detach().cpu().numpy().mean()
                     metric_names.append(prefix+"Mean mean of predicted gaussian")
@@ -281,12 +263,6 @@ class ICM(nn.Module):
                 metric_values.append(metric)
             return dict(zip(metric_names, metric_values))
 
-    def get_probability_distribution(self, old_obs, new_obs, actions):
-        latent_obs, latent_next_obs = self.feature(old_obs), self.feature(new_obs)
-        output = self.inverse_net(latent_obs, latent_next_obs)
-        probabilities = F.softmax(output)[:, actions]
-        return probabilities.cpu().mean().item()
-
     def get_grad_norm(self):
         total_norm = 0
         for p in self.parameters():
@@ -295,9 +271,3 @@ class ICM(nn.Module):
                 total_norm += param_norm.item() ** 2
         total_norm = total_norm ** 0.5
         return float(total_norm)
-
-    def _debug_params(self):
-        for name, param in self.named_parameters():
-            print("Name: \n{}".format(name))
-            print("Params: \n{}".format(param))
-            print("Gradient: \n{}".format(param.grad))

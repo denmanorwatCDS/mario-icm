@@ -5,3 +5,6 @@ dqn_buffer
 __pycache__/
 Action_examples/
 fixated_buffer_image_logs/
+wandb/*
+MyDoomPackageCustom.egg-info/*
+./wandb/*

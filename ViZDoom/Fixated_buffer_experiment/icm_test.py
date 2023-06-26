@@ -200,10 +200,8 @@ if __name__ == "__main__":
             self.pde_regulizer = 0.
             self.apply_bounder = True
             self.discrete = False
-            self.learning_steps=10_000
-            
-    #config = Mock()
-    #main()
+            self.learning_steps = 10_000
+
     
     sweep_id = wandb.sweep(
         sweep=sweep_configuration,

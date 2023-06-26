@@ -1,21 +1,16 @@
-import gymnasium
 from stable_baselines3.common.callbacks import BaseCallback
-import torch
 import wandb
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
 import time
-import pickle
 from torchvision.transforms import Grayscale
 
 
 class LoggerCallback(BaseCallback):
-    def __init__(self, verbose, wandb_project_name, config, global_counter, quantity_of_agents, device,
+    def __init__(self, verbose, wandb_project_name, global_counter, quantity_of_agents, device,
                  log_frequency=500, video_submission_frequency=10, fps=30):
         super(LoggerCallback, self).__init__(verbose)
         self.wandb_project_name = wandb_project_name
-        self.config = config
         self.global_counter = global_counter
         self.log_frequency = log_frequency
         self.video_submission_frequency = video_submission_frequency
@@ -102,7 +97,6 @@ class LoggerCallback(BaseCallback):
 
     def process_mean_characteristics(self, log):
         for simple_characteristic in self.simple_characteristics:
-            print(simple_characteristic)
             if simple_characteristic == "Raw/Mean episode steps":
                 print(self.step_characteristics[simple_characteristic])
 
@@ -153,8 +147,6 @@ class LoggerCallback(BaseCallback):
                 torch.as_tensor(self.locals["new_obs"]).to(self.device)
         actions = self.locals["clipped_actions"]
         self.update_metrics(previous_observation, current_observation, actions)
-        #if type(self.training_env.action_space) == gymnasium.spaces.Discrete:
-        #    self.update_estimated_probability_of_ground_truth(previous_observation, current_observation, actions)
 
         done = self.locals["dones"][0]
         self.log_video_if_ready(previous_observation, done, None)
@@ -166,7 +158,6 @@ class LoggerCallback(BaseCallback):
             log = {}
             self.process_mean_characteristics(log)
             self.log_timer(log)
-            print(log)
             wandb.log(log, step=self.global_counter.get_count())
 
     def _register_metrics_if_necessary(self, metrics):

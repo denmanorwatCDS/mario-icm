@@ -1,5 +1,6 @@
+# Modified (slightly) from gymnasium robotics
+
 import cv2
-import sys
 from os import path
 from typing import Dict, List, Optional, Union
 

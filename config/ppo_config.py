@@ -1,13 +1,21 @@
 from architecture.neural_network_ext import ActorCritic
-from stable_baselines3.common.sb2_compat.rmsprop_tf_like import RMSpropTFLike
 
 # Learning rate of A2C optimizer
 # SB3+Pathak (One changed parameter)
 LR=0.0001 # was 0.0007
 
-# Number of forward steps in A3C (default: 20):
+# Number of steps, at which buffer collection is happening
 # SB3
-NUM_STEPS=20 # 20
+NUM_STEPS=2000
+
+# Number of training epochs on buffer of PPO
+EPOCHS=5
+
+# Batch size whilist training on buffer of PPO
+BATCH_SIZE=200
+
+# Number of steps, at which buffer for icm is collected. After this steps, icm will be updated
+ICM_NUM_STEPS=20
 
 # Number of architecture in A2C
 # SB3
@@ -19,11 +27,11 @@ GAMMA=0.99
 
 # Lambda parameter for GAE
 # SB3
-GAE_LAMBDA=1.
+GAE_LAMBDA=0.95
 
 # Entropy coef
 # SB3; Was 0.0005
-ENTROPY_COEF=0.001
+ENTROPY_COEF=0.
 
 # Value loss coefficient
 # SB3
@@ -42,7 +50,10 @@ POLICY_KWARGS=dict(features_extractor_class=ActorCritic)
 
 config_dict = {
     "LR": LR,
-    "NUM_STEPS - quantity of rollout steps": NUM_STEPS,
+    "NUM_STEPS - number of steps, at which buffer collection is happening": NUM_STEPS,
+    "EPOCHS - Number of training epochs on buffer of PPO": EPOCHS,
+    "BATCH_SIZE - Batch size whilist training on buffer of PPO": BATCH_SIZE,
+    "ICM_NUM_STEPS - Number of steps, at which buffer for icm is collected. After this steps, icm will be updated": ICM_NUM_STEPS,
     "NUM_AGENTS - number of architecture, that work in parallel": NUM_AGENTS,
     "GAMMA - discount factor of reward": GAMMA,
     "GAE_LAMBDA - lambda parameter for GAE": GAE_LAMBDA,
