@@ -52,8 +52,10 @@ All graphs here averaged with three seeds. It's worth mentioning that agent eith
 A2C + ICM showed bad results with continuous ViZDoom problem:
 ![A2C+ICM](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/0f8dfe4d-9bbf-44d1-b764-a471c796e40a)  
 
-A2C solely also could not solve continuous ViZDoom problem ideally:
-![A2C](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/8f0f8d4f-a023-4150-a048-ae0ccd9909b8)
+A2C solely also could not solve continuous ViZDoom problem ideally:  
+
+![A2C](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/8f0f8d4f-a023-4150-a048-ae0ccd9909b8)  
+
 
 ### PPO
 Thus, we decided to try PPO+ICM algorythm. And it always solved ViZDoom scenario:
