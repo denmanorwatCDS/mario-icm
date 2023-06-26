@@ -1,7 +1,7 @@
 # Continuous Intrinsic curiosity module
 Purpose of this project - reproduction of Intrinsic curiosity module (ICM) paper by Pathak et al., and implementation of continuous version of ICM.
 
-# Results of reproduction.
+## Results of reproduction.
 Scenario, on which agent was tested:
 3 actions: turn left, turn right, move forward. Reward: 1 on vest achievement (End of labyrinth), zero else.
 Instead of A3C algorythm, in this project A2C algorythm was used.  
@@ -16,6 +16,7 @@ As a result, on sparse scenario we were able to achieve similar to original resu
 ![Mean episode steps](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/2960ec09-8f4a-4c23-a9c5-9e8f80b199c9)
 This results averaged on 3 seeds.
 
+## Minigrid
 Second environment, on which agent was tested (First chronologically), was minigrid environment.  
 
 4 Actions: move left, up, right, down. No extrinsic reward, only intrinsic reward. Purpose of this environment: debug ICM and explore it's exploration capabilities and how they are dependend on hyperparameters.  
@@ -36,7 +37,7 @@ But, for some interesting reason, estimation of value, made by critic, is indepe
 
 ![Value estimation](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/bc9a5042-8093-4c0a-a8cb-b76ef2098189)
 
-# Results of experiment.
+# Results of continuous experiments
 ## ViZDoom continuous
 Afterwards, we tried to implement continuous version of ICM. In order to achieve this, we changed output of inverse model: now, instead of probabilities of all actions, inverse model predicts performed action. Loss was also changed from CrossEntropy to MSE.
 First environment was ViZDoom in continuous setting.   
