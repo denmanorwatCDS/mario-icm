@@ -56,7 +56,7 @@ A2C solely also could not solve continuous ViZDoom problem ideally:
 ![A2C](link)  
 
 ### PPO
-Thus, we decided to try PPO algorythm. And it always solved ViZDoom scenario:
+Thus, we decided to try PPO+ICM algorythm. And it always solved ViZDoom scenario:
 ![PPO+ICM](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/daeaf956-606a-47ce-8fb3-99941baa3ffe)
 Solution example:  
 ![solution](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/5709bd37-5b9c-4e35-a349-1f2aa3d805af)
