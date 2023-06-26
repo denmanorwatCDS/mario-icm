@@ -3,7 +3,7 @@ Purpose of this project - reproduction of Intrinsic curiosity module (ICM) paper
 
 ## Results of reproduction.
 Scenario, on which agent was tested:
-3 actions: turn left, turn right, move forward. Reward: 1 on vest achievement (End of labyrinth), zero else.
+3 actions: turn left, turn right, move forward. Reward: 1 on vest achievement (End of labyrinth), zero else. Cap of environment steps: 525.
 Instead of A3C algorythm, in this project A2C algorythm was used.  
 
 ![Sparse](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/e4ad8369-787b-49d3-a633-5640f02899a9)  
@@ -40,7 +40,7 @@ But, for some interesting reason, estimation of value, made by critic, is indepe
 # Results of continuous experiments
 ## ViZDoom continuous
 Afterwards, we tried to implement continuous version of ICM. In order to achieve this, we changed output of inverse model: now, instead of probabilities of all actions, inverse model predicts performed action. Loss was also changed from CrossEntropy to MSE.
-First environment was ViZDoom in continuous setting.   
+First environment was ViZDoom in continuous setting. Extrinsic reward, as in previous setup was given only for maze completion, and cap of steps was 525 (As in previous setup).   
 
 Action vector: 2 component vector, first component - angle of rotation, second component - amount of movement. Agent could move only forward, not backward: experiments showed that allowance of backward movement complicated the task.  
 
@@ -72,6 +72,7 @@ At this environment, we tried easier format of labyrinth from gymnasium-robotics
 ![Labyrinth](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/3cb73245-575c-444f-867a-aa3dac29d5c8)  
 However, problem of this setting is that inertia is playing much bigger role here, rather than in ViZDoom.
 We tried two setting: egocentric pointmaze (with ball swapped to cylinder, to avoid rotation of camera) and egocentric antmaze.  
+As in previous setups, we checked only sparse extrinsic reward, that was depended on quantity of steps before achievement of reward - less steps - more reward. Cap of environment steps: 1000.
 
 ![Egocentric obs](https://github.com/denmanorwatCDS/mario-icm/assets/119806492/91f315eb-3fc3-47cc-a31f-fc3933339382)  
 
